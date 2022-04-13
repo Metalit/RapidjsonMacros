@@ -56,6 +56,13 @@ jobs:
         ls -la ${GITHUB_WORKSPACE}/extern/libs
         echo cache:
         ls -la $HOME/.local/share/QPM-Rust/cache
+    
+    - name: Get Tag Version
+      id: get_tag_version
+      run: |
+        echo ${GITHUB_REF#refs/tags/}
+        echo ::set-output name=TAG::${GITHUB_REF#refs/tags/}
+        echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/v}
       
     - name: QPM Edit Version
       run: |

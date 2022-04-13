@@ -5,7 +5,7 @@
     "name": "Rapidjson-Macros",
     "id": "rapidjson-macros",
     "version": "0.1.0",
-    "url": null,
+    "url": "https://github.com/Metalit/RapidjsonMacros",
     "additionalData": {
       "headersOnly": true
     }

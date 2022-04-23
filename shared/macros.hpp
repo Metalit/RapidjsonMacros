@@ -1,6 +1,6 @@
 #pragma once
 
-#include "beatsaber-hook/shared/config/rapidjson-utils.hpp"
+#include "rapidjson-macros/shared/serialization.hpp"
 
 class JSONException : public std::exception {
     private:
@@ -16,173 +16,221 @@ class JSONException : public std::exception {
 };
 
 class JSONClass {
+    protected:
+        std::vector<std::function<void(rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)>> serializers;
+        std::vector<std::function<void(const rapidjson::Value& jsonValue)>> deserializers;
     public:
-        virtual void Deserialize(const rapidjson::Value& jsonValue) = 0;
-        virtual rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) = 0;
+        virtual void Deserialize(const rapidjson::Value& jsonValue) {
+            for(auto& method : deserializers)
+                method(jsonValue);
+        }
+        virtual rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) {
+            rapidjson::Value jsonObject(rapidjson::kObjectType);
+            for(auto& method : serializers)
+                method(jsonObject, allocator);
+            return jsonObject;
+        }
 };
 
-#define DECLARE_JSON_CLASS(namespaze, name, impl) \
+#define DECLARE_JSON_CLASS(namespaze, name, ...) \
 namespace namespaze { \
     class name : public JSONClass { \
         public: \
             void Deserialize(const rapidjson::Value& jsonValue); \
             rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator); \
-            impl \
+            __VA_ARGS__ \
     }; \
 }
 
 #define DESERIALIZE_METHOD(namespaze, name, ...) \
 void namespaze::name::Deserialize(const rapidjson::Value& jsonValue) { \
     __VA_ARGS__ \
+    for(auto& method : deserializers) \
+        method(jsonValue); \
 }
-
-#define DESERIALIZE_VALUE(name, jsonName, type) \
-if (!jsonValue.HasMember(#jsonName)) throw JSONException(#jsonName " not found"); \
-if (!jsonValue[#jsonName].Is##type()) throw JSONException(#jsonName ", type expected was: " #type); \
-name = jsonValue[#jsonName].Get##type();
-
-#define DESERIALIZE_VALUE_OPTIONAL(name, jsonName, type) \
-if(jsonValue.HasMember(#jsonName) && jsonValue[#jsonName].Is##type()) { \
-    name = jsonValue[#jsonName].Get##type(); \
-} else name = std::nullopt;
-
-#define DESERIALIZE_VALUE_DEFAULT(name, jsonName, type, def) \
-if(jsonValue.HasMember(#jsonName) && jsonValue[#jsonName].Is##type()) { \
-    name = jsonValue[#jsonName].Get##type(); \
-} else name = def;
-
-#define DESERIALIZE_CLASS(name, jsonName) \
-if (!jsonValue.HasMember(#jsonName)) throw JSONException(#jsonName " not found"); \
-if (!jsonValue[#jsonName].IsObject()) throw JSONException(#jsonName ", type expected was: JsonObject"); \
-name.Deserialize(jsonValue[#jsonName]);
-
-#define DESERIALIZE_CLASS_OPTIONAL(name, jsonName) \
-if(jsonValue.HasMember(#jsonName) && jsonValue[#jsonName].IsObject()) { \
-    if(!name.has_value()) name.emplace(); \
-    name->Deserialize(jsonValue[#jsonName]); \
-} else name = std::nullopt;
-
-#define DESERIALIZE_CLASS_DEFAULT(name, jsonName, def) \
-if(jsonValue.HasMember(#jsonName) && jsonValue[#jsonName].IsObject()) { \
-    name.Deserialize(jsonValue[#jsonName]); \
-} else name = def;
-
-// seems to assume vector is of another json class
-#define DESERIALIZE_VECTOR(name, jsonName, type) \
-if (!jsonValue.HasMember(#jsonName)) throw JSONException(#jsonName " not found"); \
-name.clear(); \
-auto& jsonName = jsonValue[#jsonName]; \
-if(jsonName.IsArray()) { \
-    for (auto it = jsonName.Begin(); it != jsonName.End(); ++it) { \
-        type value{}; \
-        value.Deserialize(*it); \
-        name.push_back(value); \
-    } \
-} else throw JSONException(#jsonName ", type expected was: JsonArray");
-
-#define DESERIALIZE_VECTOR_OPTIONAL(name, jsonName, type) \
-if(jsonValue.HasMember(#jsonName) && jsonValue[#jsonName].IsArray()) { \
-    if(!name.has_value()) name.emplace(); \
-    else name->clear(); \
-    auto& jsonName = jsonValue[#jsonName]; \
-    for (auto it = jsonName.Begin(); it != jsonName.End(); ++it) { \
-        type value{}; \
-        value.Deserialize(*it); \
-        name->push_back(value); \
-    } \
-} else name = std::nullopt;
-
-#define DESERIALIZE_VECTOR_DEFAULT(name, jsonName, type, def) \
-if(jsonValue.HasMember(#jsonName) && jsonValue[#jsonName].IsArray()) { \
-    name.clear(); \
-    auto& jsonName = jsonValue[#jsonName]; \
-    for (auto it = jsonName.Begin(); it != jsonName.End(); ++it) { \
-        type value{}; \
-        value.Deserialize(*it); \
-        name.push_back(value); \
-    } \
-} else name = def;
-
-#define DESERIALIZE_VECTOR_BASIC(name, jsonName, type) \
-if (!jsonValue.HasMember(#jsonName)) throw JSONException(#jsonName " not found"); \
-name.clear(); \
-auto& jsonName = jsonValue[#jsonName]; \
-if(jsonName.IsArray()) { \
-    for (auto it = jsonName.Begin(); it != jsonName.End(); ++it) { \
-        name.push_back(it->Get##type()); \
-    } \
-} else throw JSONException(#jsonName ", type expected was: JsonArray");
-
-#define DESERIALIZE_VECTOR_BASIC_OPTIONAL(name, jsonName, type) \
-if(jsonValue.HasMember(#jsonName) && jsonValue[#jsonName].IsArray()) { \
-    if(!name.has_value()) name.emplace(); \
-    else name->clear(); \
-    auto& jsonName = jsonValue[#jsonName]; \
-    for (auto it = jsonName.Begin(); it != jsonName.End(); ++it) { \
-        name->push_back(it->Get##type()); \
-    } \
-} else name = std::nullopt;
-
-#define DESERIALIZE_VECTOR_BASIC_DEFAULT(name, jsonName, type, def) \
-if(jsonValue.HasMember(#jsonName) && jsonValue[#jsonName].IsArray()) { \
-    name.clear(); \
-    auto& jsonName = jsonValue[#jsonName]; \
-    for (auto it = jsonName.Begin(); it != jsonName.End(); ++it) { \
-        name.push_back(it->Get##type()); \
-    } \
-} else name = def;
 
 #define SERIALIZE_METHOD(namespaze, name, ...) \
 rapidjson::Value namespaze::name::Serialize(rapidjson::Document::AllocatorType& allocator) { \
     rapidjson::Value jsonObject(rapidjson::kObjectType); \
     __VA_ARGS__ \
+    for(auto& method : serializers) \
+        method(jsonObject, allocator); \
     return jsonObject; \
 }
 
-#define SERIALIZE_VALUE(name, jsonName) \
-jsonObject.AddMember(#jsonName, name, allocator);
-
-#define SERIALIZE_VALUE_OPTIONAL(name, jsonName) \
-if(name) jsonObject.AddMember(#jsonName, name.value(), allocator);
-
-#define SERIALIZE_CLASS(name, jsonName) \
-jsonObject.AddMember(#jsonName, name.Serialize(allocator), allocator);
-
-#define SERIALIZE_CLASS_OPTIONAL(name, jsonName) \
-if(name) jsonObject.AddMember(#jsonName, name->Serialize(allocator), allocator);
-
-// assumes vector is of json serializables
-#define SERIALIZE_VECTOR(name, jsonName) \
-rapidjson::Value name##_jsonArray(rapidjson::kArrayType); \
-for(auto jsonClass : name) { \
-    name##_jsonArray.GetArray().PushBack(jsonClass.Serialize(allocator), allocator); \
-} \
-jsonObject.AddMember(#jsonName, name##_jsonArray, allocator);
-
-#define SERIALIZE_VECTOR_OPTIONAL(name, jsonName) \
-if(name) { \
-    rapidjson::Value name##_jsonArray(rapidjson::kArrayType); \
-    for(auto jsonClass : name.value()) { \
-        name##_jsonArray.GetArray().PushBack(jsonClass.Serialize(allocator), allocator); \
+#define AUTO_VALUE(type, name) \
+private: \
+template<class T> \
+void serialize_##name(T& name##_val, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+    if constexpr(std::is_base_of<JSONClass, T>::value) { \
+        SERIALIZE_CLASS(name##_val, name); \
+    } else { \
+        SERIALIZE_VALUE(name##_val, name); \
     } \
-    jsonObject.AddMember(#jsonName, name##_jsonArray, allocator);\
-}
-
-#define SERIALIZE_VECTOR_BASIC(name, jsonName) \
-rapidjson::Value name##_jsonArray(rapidjson::kArrayType); \
-for(auto member : name) { \
-    name##_jsonArray.GetArray().PushBack(rapidjson::Value(member, allocator).Move(), allocator); \
 } \
-jsonObject.AddMember(#jsonName, name##_jsonArray, allocator);
-
-#define SERIALIZE_VECTOR_BASIC_OPTIONAL(name, jsonName) \
-if(name) { \
-    rapidjson::Value name##_jsonArray(rapidjson::kArrayType); \
-    for(auto member : name.value()) { \
-        name##_jsonArray.GetArray().PushBack(rapidjson::Value(member, allocator).Move(), allocator); \
+template<class T> \
+void deserialize_##name(T& name##_val, const rapidjson::Value& jsonValue) { \
+    if constexpr(std::is_base_of<JSONClass, T>::value) { \
+        DESERIALIZE_CLASS(name##_val, name); \
+    } else { \
+        DESERIALIZE_VALUE(name##_val, name); \
     } \
-    jsonObject.AddMember(#jsonName, name##_jsonArray, allocator); \
-}
+} \
+public: \
+type name = ([this]() { \
+    serializers.emplace_back([this](rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serialize_##name(name, jsonObject, allocator); \
+    }); \
+    deserializers.emplace_back([this](const rapidjson::Value& jsonValue) { \
+        deserialize_##name(name, jsonValue); \
+    }); \
+    return type(); \
+})();
+
+#define AUTO_VALUE_OPTIONAL(type, name) \
+private: \
+template<class T> \
+void serialize_##name(std::optional<T>& name##_val, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+    if constexpr(std::is_base_of<JSONClass, T>::value) { \
+        SERIALIZE_CLASS_OPTIONAL(name##_val, name); \
+    } else { \
+        SERIALIZE_VALUE_OPTIONAL(name##_val, name); \
+    } \
+} \
+template<class T> \
+void deserialize_##name(std::optional<T>& name##_val, const rapidjson::Value& jsonValue) { \
+    if constexpr(std::is_base_of<JSONClass, T>::value) { \
+        DESERIALIZE_CLASS_OPTIONAL(name##_val, name); \
+    } else { \
+        DESERIALIZE_VALUE_OPTIONAL(name##_val, name); \
+    } \
+} \
+public: \
+std::optional<type> name = ([this]() { \
+    serializers.emplace_back([this](rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serialize_##name(name, jsonObject, allocator); \
+    }); \
+    deserializers.emplace_back([this](const rapidjson::Value& jsonValue) { \
+        deserialize_##name(name, jsonValue); \
+    }); \
+    return std::nullopt; \
+})();
+
+#define AUTO_VALUE_DEFAULT(type, name, def) \
+private: \
+template<class T> \
+void serialize_##name(T& name##_val, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+    if constexpr(std::is_base_of<JSONClass, T>::value) { \
+        SERIALIZE_CLASS(name##_val, name); \
+    } else { \
+        SERIALIZE_VALUE(name##_val, name); \
+    } \
+} \
+template<class T> \
+void deserialize_##name(T& name##_val, const rapidjson::Value& jsonValue) { \
+    if constexpr(std::is_base_of<JSONClass, T>::value) { \
+        DESERIALIZE_CLASS_DEFAULT(name##_val, name, def); \
+    } else { \
+        DESERIALIZE_VALUE_DEFAULT(name##_val, name, def); \
+    } \
+} \
+public: \
+type name = ([this]() { \
+    serializers.emplace_back([this](rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serialize_##name(name, jsonObject, allocator); \
+    }); \
+    deserializers.emplace_back([this](const rapidjson::Value& jsonValue) { \
+        deserialize_##name(name, jsonValue); \
+    }); \
+    return def; \
+})();
+
+#define AUTO_VECTOR(type, name) \
+private: \
+template<class T> \
+void serialize_##name(std::vector<T>& name##_val, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+    if constexpr(std::is_base_of<JSONClass, T>::value) { \
+        SERIALIZE_VECTOR(name##_val, name); \
+    } else { \
+        SERIALIZE_VECTOR_BASIC(name##_val, name); \
+    } \
+} \
+template<class T> \
+void deserialize_##name(std::vector<T>& name##_val, const rapidjson::Value& jsonValue) { \
+    if constexpr(std::is_base_of<JSONClass, T>::value) { \
+        DESERIALIZE_VECTOR(name##_val, name); \
+    } else { \
+        DESERIALIZE_VECTOR_BASIC(name##_val, name); \
+    } \
+} \
+public: \
+std::vector<type> name = ([this]() { \
+    serializers.emplace_back([this](rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serialize_##name(name, jsonObject, allocator); \
+    }); \
+    deserializers.emplace_back([this](const rapidjson::Value& jsonValue) { \
+        deserialize_##name(name, jsonValue); \
+    }); \
+    return std::vector<type>(); \
+})();
+
+#define AUTO_VECTOR_OPTIONAL(type, name) \
+private: \
+template<class T> \
+void serialize_##name(std::optional<std::vector<T>>& name##_val, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+    if constexpr(std::is_base_of<JSONClass, T>::value) { \
+        SERIALIZE_VECTOR_OPTIONAL(name##_val, name); \
+    } else { \
+        SERIALIZE_VECTOR_BASIC_OPTIONAL(name##_val, name); \
+    } \
+} \
+template<class T> \
+void deserialize_##name(std::optional<std::vector<T>>& name##_val, const rapidjson::Value& jsonValue) { \
+    if constexpr(std::is_base_of<JSONClass, T>::value) { \
+        DESERIALIZE_VECTOR_OPTIONAL(name##_val, name); \
+    } else { \
+        DESERIALIZE_VECTOR_BASIC_OPTIONAL(name##_val, name); \
+    } \
+} \
+public: \
+std::optional<std::vector<type>> name = ([this]() { \
+    serializers.emplace_back([this](rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serialize_##name(name, jsonObject, allocator); \
+    }); \
+    deserializers.emplace_back([this](const rapidjson::Value& jsonValue) { \
+        deserialize_##name(name, jsonValue); \
+    }); \
+    return std::nullopt; \
+})();
+
+#define AUTO_VECTOR_DEFAULT(type, name, def) \
+private: \
+template<class T> \
+void serialize_##name(std::vector<T>& name##_val, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+    if constexpr(std::is_base_of<JSONClass, T>::value) { \
+        SERIALIZE_VECTOR(name##_val, name); \
+    } else { \
+        SERIALIZE_VECTOR_BASIC(name##_val, name); \
+    } \
+} \
+template<class T> \
+void deserialize_##name(std::vector<T>& name##_val, const rapidjson::Value& jsonValue) { \
+    if constexpr(std::is_base_of<JSONClass, T>::value) { \
+        DESERIALIZE_VECTOR_DEFAULT(name##_val, name, def); \
+    } else { \
+        DESERIALIZE_VECTOR_BASIC_DEFAULT(name##_val, name, def); \
+    } \
+} \
+public: \
+std::vector<type> name = ([this]() { \
+    serializers.emplace_back([this](rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serialize_##name(name, jsonObject, allocator); \
+    }); \
+    deserializers.emplace_back([this](const rapidjson::Value& jsonValue) { \
+        deserialize_##name(name, jsonValue); \
+    }); \
+    return def; \
+})();
 
 // functions, will be included with class definitions
 static void ReadFromFile(std::string_view path, JSONClass& toDeserialize) {

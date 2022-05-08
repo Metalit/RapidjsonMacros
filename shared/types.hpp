@@ -35,29 +35,30 @@ concept JSONClassDerived = std::is_base_of_v<JSONClass, T>;
 
 namespace rapidjson_macros_types {
 
-    template<class T, class R>
+    template<class T, class R, std::size_t N = 0>
     R GetJSONString(const T& string, rapidjson::Document::AllocatorType& allocator);
 
-    template<class T>
-    rapidjson::Value& GetJSONString(const T& string, rapidjson::Document::AllocatorType& allocator) {
-        return rapidjson::Value(string, allocator).Move();
+    template<class T, std::size_t N = 0>
+    requires(std::is_convertible_v<T, std::string>)
+    rapidjson::Value GetJSONString(const T& string, rapidjson::Document::AllocatorType& allocator) {
+        return rapidjson::Value(string, allocator);
     }
-    template<>
-    const char* const& GetJSONString(const char* const& string, rapidjson::Document::AllocatorType& allocator) {
-        return string;
+    template<std::size_t N = 0>
+    rapidjson::Value::StringRefType GetJSONString(const char (&string)[N], rapidjson::Document::AllocatorType& allocator) {
+        return rapidjson::Value::StringRefType(string);
     }
 
     template<class T>
-    rapidjson::Value& CreateJSONValue(T& value, rapidjson::Document::AllocatorType& allocator) {
-        return rapidjson::Value(value).Move();
+    rapidjson::Value CreateJSONValue(T& value, rapidjson::Document::AllocatorType& allocator) {
+        return rapidjson::Value(value);
     }
     template<>
-    rapidjson::Value& CreateJSONValue(const std::string& value, rapidjson::Document::AllocatorType& allocator) {
-        return rapidjson::Value(value, allocator).Move();
+    rapidjson::Value CreateJSONValue(const std::string& value, rapidjson::Document::AllocatorType& allocator) {
+        return rapidjson::Value(value, allocator);
     }
     template<>
-    rapidjson::Value& CreateJSONValue(std::string& value, rapidjson::Document::AllocatorType& allocator) {
-        return rapidjson::Value(value, allocator).Move();
+    rapidjson::Value CreateJSONValue(std::string& value, rapidjson::Document::AllocatorType& allocator) {
+        return rapidjson::Value(value, allocator);
     }
     
     template<class T>

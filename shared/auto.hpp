@@ -2,51 +2,51 @@
 
 #include "../shared/serialization.hpp"
 
-#define SPECIALIZATION(prefix, type, macro) \
-prefix void Deserialize(type& var, const char* const& jsonName, const rapidjson::Value& jsonValue) { \
+#define SPECIALIZATION(type, macro, ...) \
+__VA_ARGS__ void Deserialize(type& var, const char (&jsonName)[N], const rapidjson::Value& jsonValue) { \
     DESERIALIZE_##macro(var, jsonName); \
 } \
-prefix void DeserializeOptional(std::optional<type>& var, const char* const& jsonName, const rapidjson::Value& jsonValue) { \
+__VA_ARGS__ void DeserializeOptional(std::optional<type>& var, const char (&jsonName)[N], const rapidjson::Value& jsonValue) { \
     DESERIALIZE_##macro##_OPTIONAL(var, jsonName); \
 } \
-prefix void DeserializeDefault(type& var, const char* const& jsonName, const auto& defaultValue, const rapidjson::Value& jsonValue) { \
+__VA_ARGS__ void DeserializeDefault(type& var, const char (&jsonName)[N], const type& defaultValue, const rapidjson::Value& jsonValue) { \
     DESERIALIZE_##macro##_DEFAULT(var, jsonName, defaultValue); \
 } \
-prefix void Serialize(type& var, const char* const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+__VA_ARGS__ void Serialize(type& var, const char (&jsonName)[N], rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
     SERIALIZE_##macro(var, jsonName); \
 } \
-prefix void SerializeOptional(std::optional<type>& var, const char* const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+__VA_ARGS__ void SerializeOptional(std::optional<type>& var, const char (&jsonName)[N], rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
     SERIALIZE_##macro##_OPTIONAL(var, jsonName); \
 }
 
 #define BASIC_SPECIALIZATION(type) \
-SPECIALIZATION(template<>, type, VALUE) \
-SPECIALIZATION(template<>, std::vector<type>, VECTOR_BASIC)
+SPECIALIZATION(type, VALUE, template<std::size_t N = 0>) \
+SPECIALIZATION(std::vector<type>, VECTOR_BASIC, template<std::size_t N = 0>)
 
 namespace rapidjson_macros_auto {
 
-    template<class T>
-    void Deserialize(T& var, const char* const& jsonName, const rapidjson::Value& jsonValue);
-    template<class T>
-    void DeserializeOptional(std::optional<T>& var, const char* const& jsonName, const rapidjson::Value& jsonValue);
-    template<class T>
-    void DeserializeDefault(T& var, const char* const& jsonName, const auto& defaultValue, const rapidjson::Value& jsonValue);
+    template<class T, std::size_t N = 0>
+    void Deserialize(T& var, const char (&jsonName)[N], const rapidjson::Value& jsonValue);
+    template<class T, std::size_t N = 0>
+    void DeserializeOptional(std::optional<T>& var, const char (&jsonName)[N], const rapidjson::Value& jsonValue);
+    template<class T, std::size_t N = 0>
+    void DeserializeDefault(T& var, const char (&jsonName)[N], const T& defaultValue, const rapidjson::Value& jsonValue);
     
-    template<class T>
-    void Serialize(T& var, const char* const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);
-    template<class T>
-    void SerializeOptional(std::optional<T>& var, const char* const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);
+    template<class T, std::size_t N = 0>
+    void Serialize(T& var, const char (&jsonName)[N], rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);
+    template<class T, std::size_t N = 0>
+    void SerializeOptional(std::optional<T>& var, const char (&jsonName)[N], rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);
 
     SPECIALIZATION(
-        template<JSONClassDerived T>,
         T,
-        CLASS
+        CLASS,
+        template<JSONClassDerived T, std::size_t N = 0>
     )
     
     SPECIALIZATION(
-        template<JSONClassDerived T>,
         std::vector<T>,
-        VECTOR
+        VECTOR,
+        template<JSONClassDerived T, std::size_t N = 0>
     )
     
     BASIC_SPECIALIZATION(bool)

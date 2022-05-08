@@ -99,16 +99,20 @@ if(jsonValue.HasMember(jsonName) && jsonValue[jsonName].IsArray()) { \
 } else name = def;
 
 #define SERIALIZE_VALUE(name, jsonName) \
-jsonObject.AddMember(rapidjson_macros_types::GetJSONString(jsonName, allocator), name, allocator);
+auto name##_jsonName = rapidjson_macros_types::GetJSONString(jsonName, allocator); \
+jsonObject.AddMember(name##_jsonName, name, allocator);
 
 #define SERIALIZE_VALUE_OPTIONAL(name, jsonName) \
-if(name) jsonObject.AddMember(rapidjson_macros_types::GetJSONString(jsonName, allocator), name.value(), allocator);
+auto name##_jsonName = rapidjson_macros_types::GetJSONString(jsonName, allocator); \
+if(name) jsonObject.AddMember(name##_jsonName, name.value(), allocator);
 
 #define SERIALIZE_CLASS(name, jsonName) \
-jsonObject.AddMember(rapidjson_macros_types::GetJSONString(jsonName, allocator), name.Serialize(allocator), allocator);
+auto name##_jsonName = rapidjson_macros_types::GetJSONString(jsonName, allocator); \
+jsonObject.AddMember(name##_jsonName, name.Serialize(allocator), allocator);
 
 #define SERIALIZE_CLASS_OPTIONAL(name, jsonName) \
-if(name) jsonObject.AddMember(rapidjson_macros_types::GetJSONString(jsonName, allocator), name->Serialize(allocator), allocator);
+auto name##_jsonName = rapidjson_macros_types::GetJSONString(jsonName, allocator); \
+if(name) jsonObject.AddMember(name##_jsonName, name->Serialize(allocator), allocator);
 
 // assumes vector is of json serializables
 #define SERIALIZE_VECTOR(name, jsonName) \
@@ -116,7 +120,8 @@ rapidjson::Value name##_jsonArray(rapidjson::kArrayType); \
 for(auto& jsonClass : name) { \
     name##_jsonArray.GetArray().PushBack(jsonClass.Serialize(allocator), allocator); \
 } \
-jsonObject.AddMember(rapidjson_macros_types::GetJSONString(jsonName, allocator), name##_jsonArray, allocator);
+auto name##_jsonName = rapidjson_macros_types::GetJSONString(jsonName, allocator); \
+jsonObject.AddMember(name##_jsonName, name##_jsonArray, allocator);
 
 #define SERIALIZE_VECTOR_OPTIONAL(name, jsonName) \
 if(name) { \
@@ -124,7 +129,8 @@ if(name) { \
     for(auto& jsonClass : name.value()) { \
         name##_jsonArray.GetArray().PushBack(jsonClass.Serialize(allocator), allocator); \
     } \
-    jsonObject.AddMember(rapidjson_macros_types::GetJSONString(jsonName, allocator), name##_jsonArray, allocator);\
+    auto name##_jsonName = rapidjson_macros_types::GetJSONString(jsonName, allocator); \
+    jsonObject.AddMember(name##_jsonName, name##_jsonArray, allocator);\
 }
 
 #define SERIALIZE_VECTOR_BASIC(name, jsonName) \
@@ -132,7 +138,8 @@ rapidjson::Value name##_jsonArray(rapidjson::kArrayType); \
 for(const auto& member : name) { \
     name##_jsonArray.GetArray().PushBack(rapidjson_macros_types::CreateJSONValue(member, allocator), allocator); \
 } \
-jsonObject.AddMember(rapidjson_macros_types::GetJSONString(jsonName, allocator), name##_jsonArray, allocator);
+auto name##_jsonName = rapidjson_macros_types::GetJSONString(jsonName, allocator); \
+jsonObject.AddMember(name##_jsonName, name##_jsonArray, allocator);
 
 #define SERIALIZE_VECTOR_BASIC_OPTIONAL(name, jsonName) \
 if(name) { \
@@ -140,7 +147,8 @@ if(name) { \
     for(const auto& member : name.value()) { \
         name##_jsonArray.GetArray().PushBack(rapidjson_macros_types::CreateJSONValue(member, allocator), allocator); \
     } \
-    jsonObject.AddMember(rapidjson_macros_types::GetJSONString(jsonName, allocator), name##_jsonArray, allocator); \
+    auto name##_jsonName = rapidjson_macros_types::GetJSONString(jsonName, allocator); \
+    jsonObject.AddMember(name##_jsonName, name##_jsonArray, allocator); \
 }
 
 template<JSONClassDerived T>

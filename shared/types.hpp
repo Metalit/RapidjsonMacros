@@ -17,17 +17,15 @@ class JSONException : public std::exception {
 
 class JSONClass {
     protected:
-        std::vector<std::function<void(rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)>> serializers;
-        std::vector<std::function<void(const rapidjson::Value& jsonValue)>> deserializers;
+        virtual void _Deserialize(const rapidjson::Value& jsonValue) = 0;
+        virtual void _Serialize(rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) = 0;
     public:
         virtual void Deserialize(const rapidjson::Value& jsonValue) {
-            for(auto& method : deserializers)
-                method(jsonValue);
+            _Deserialize(jsonValue);
         }
         virtual rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) {
             rapidjson::Value jsonObject(rapidjson::kObjectType);
-            for(auto& method : serializers)
-                method(jsonObject, allocator);
+            _Serialize(jsonObject, allocator);
             return jsonObject;
         }
 };

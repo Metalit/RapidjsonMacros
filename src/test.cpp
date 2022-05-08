@@ -22,21 +22,21 @@ void setup(ModInfo& info) {
     info.version = VERSION;
     modInfo = info;
 
-    if(!fileexists(CONFIG_PATH)) {
+    if(!fileexists(GetConfigPath())) {
         try {
-            WriteToFile(CONFIG_PATH, testClass);
+            WriteToFile(GetConfigPath(), testClass);
         } catch(const std::exception& e) {
             getLogger().error("error writing: %s", e.what());
         }
     }
 
     try {
-        ReadFromFile(CONFIG_PATH, testClass);
+        ReadFromFile(GetConfigPath(), testClass);
     } catch(const std::exception& e) {
         getLogger().error("error reading test class 1: %s", e.what());
     }
     try {
-        ReadFromFile(CONFIG_PATH, autoTestClass);
+        ReadFromFile(GetConfigPath(), autoTestClass);
     } catch(const std::exception& e) {
         getLogger().error("error reading test class 2: %s", e.what());
     }

@@ -4,14 +4,11 @@
 
 class JSONException : public std::exception {
     private:
-        const char* error;
         std::string message;
     public:
-        explicit JSONException(const std::string& message) : message(message) {
-            error = message.c_str();
-        }
+        explicit JSONException(const std::string& message) : message(message) {}
         const char* what() const noexcept override {
-            return error;
+            return message.c_str();
         }
 };
 

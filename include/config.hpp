@@ -14,18 +14,18 @@ DECLARE_JSON_CLASS(RapidjsonMacros, Subclass,
     std::optional<std::string> StringValue;
 )
 SERIALIZE_METHOD(RapidjsonMacros, Subclass,
-    SERIALIZE_VALUE(IntValue, "IntValue")
+    SERIALIZE_VALUE(IntValue, "CustomNamedIntValue")
     SERIALIZE_VALUE(FloatValue, "FloatValue")
     SERIALIZE_VALUE_OPTIONAL(StringValue, "StringValue")
 )
 DESERIALIZE_METHOD(RapidjsonMacros, Subclass,
-    DESERIALIZE_VALUE(IntValue, "IntValue")
+    DESERIALIZE_VALUE(IntValue, "CustomNamedIntValue")
     DESERIALIZE_VALUE_DEFAULT(FloatValue, "FloatValue", 0)
     DESERIALIZE_VALUE_OPTIONAL(StringValue, "StringValue")
 )
 
 DECLARE_JSON_CLASS(RapidjsonMacros, AutoSubclass,
-    AUTO_VALUE(int, IntValue)
+    NAMED_AUTO_VALUE(int, IntValue, "CustomNamedIntValue")
     AUTO_VALUE_DEFAULT(float, FloatValue, 0)
     AUTO_VALUE_OPTIONAL(std::string, StringValue)
 )

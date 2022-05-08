@@ -39,50 +39,58 @@ rapidjson::Value namespaze::name::Serialize(rapidjson::Document::AllocatorType& 
     return jsonObject; \
 }
 
-#define AUTO_VALUE(type, name) \
+#define NAMED_AUTO_VALUE(type, name, jsonName) \
 type name; \
 struct _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
         serializers.emplace_back([](auto* outerClass, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
-            rapidjson_macros_auto::Serialize(outerClass->name, #name, jsonObject, allocator); \
+            rapidjson_macros_auto::Serialize(outerClass->name, jsonName, jsonObject, allocator); \
         }); \
         deserializers.emplace_back([](auto* outerClass, const rapidjson::Value& jsonValue) { \
-            rapidjson_macros_auto::Deserialize(outerClass->name, #name, jsonValue); \
+            rapidjson_macros_auto::Deserialize(outerClass->name, jsonName, jsonValue); \
         }); \
     } \
 }; \
 static inline _JSONValueAdder_##name _##name##_JSONValueAdderInstance;
 
-#define AUTO_VALUE_OPTIONAL(type, name) \
+#define NAMED_AUTO_VALUE_OPTIONAL(type, name, jsonName) \
 std::optional<type> name = std::nullopt; \
 struct _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
         serializers.emplace_back([](auto* outerClass, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
-            rapidjson_macros_auto::SerializeOptional(outerClass->name, #name, jsonObject, allocator); \
+            rapidjson_macros_auto::SerializeOptional(outerClass->name, jsonName, jsonObject, allocator); \
         }); \
         deserializers.emplace_back([](auto* outerClass, const rapidjson::Value& jsonValue) { \
-            rapidjson_macros_auto::DeserializeOptional(outerClass->name, #name, jsonValue); \
+            rapidjson_macros_auto::DeserializeOptional(outerClass->name, jsonName, jsonValue); \
         }); \
     } \
 }; \
 static inline _JSONValueAdder_##name _##name##_JSONValueAdderInstance;
 
-#define AUTO_VALUE_DEFAULT(type, name, def) \
+#define NAMED_AUTO_VALUE_DEFAULT(type, name, def, jsonName) \
 type name = def; \
 struct _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
         serializers.emplace_back([](auto* outerClass, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
-            rapidjson_macros_auto::Serialize(outerClass->name, #name, jsonObject, allocator); \
+            rapidjson_macros_auto::Serialize(outerClass->name, jsonName, jsonObject, allocator); \
         }); \
         deserializers.emplace_back([](auto* outerClass, const rapidjson::Value& jsonValue) { \
-            rapidjson_macros_auto::DeserializeDefault(outerClass->name, #name, def, jsonValue); \
+            rapidjson_macros_auto::DeserializeDefault(outerClass->name, jsonName, def, jsonValue); \
         }); \
     } \
 }; \
 static inline _JSONValueAdder_##name _##name##_JSONValueAdderInstance;
 
-#define AUTO_VECTOR(type, name) AUTO_VALUE(std::vector<type>, name)
+#define NAMED_AUTO_VECTOR(type, name, jsonName) NAMED_AUTO_VALUE(std::vector<type>, name, jsonName)
 
-#define AUTO_VECTOR_OPTIONAL(type, name) AUTO_VALUE_OPTIONAL(std::vector<type>, name)
+#define NAMED_AUTO_VECTOR_OPTIONAL(type, name, jsonName) NAMED_AUTO_VALUE_OPTIONAL(std::vector<type>, name, jsonName)
 
-#define AUTO_VECTOR_DEFAULT(type, name, def) AUTO_VALUE_DEFAULT(std::vector<type>, name, def)
+#define NAMED_AUTO_VECTOR_DEFAULT(type, name, def, jsonName) NAMED_AUTO_VALUE_DEFAULT(std::vector<type>, name, def, jsonName)
+
+#define AUTO_VALUE(type, name) NAMED_AUTO_VALUE(type, name, #name)
+#define AUTO_VALUE_OPTIONAL(type, name) NAMED_AUTO_VALUE_OPTIONAL(type, name, #name)
+#define AUTO_VALUE_DEFAULT(type, name, def) NAMED_AUTO_VALUE_DEFAULT(type, name, def, #name)
+
+#define AUTO_VECTOR(type, name) NAMED_AUTO_VECTOR(type, name, #name)
+#define AUTO_VECTOR_OPTIONAL(type, name) NAMED_AUTO_VECTOR_OPTIONAL(type, name, #name)
+#define AUTO_VECTOR_DEFAULT(type, name, def) NAMED_AUTO_VECTOR_DEFAULT(type, name, def, #name)

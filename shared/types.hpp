@@ -3,6 +3,14 @@
 #include "beatsaber-hook/shared/config/rapidjson-utils.hpp"
 
 namespace rapidjson_macros_types {
+
+    template<class T, class R>
+    R GetJSONString(T&& string, rapidjson::Document::AllocatorType& allocator allocator) {
+        if constexpr(std::is_same<const char*, T>::value) {
+            return string;
+        }
+        return rapidjson::Value(string, allocator).Move();
+    }
     
     template<class T>
     T GetValueType(const rapidjson::Value& jsonValue, const T& _) {

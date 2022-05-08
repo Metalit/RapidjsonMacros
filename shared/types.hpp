@@ -2,6 +2,39 @@
 
 #include "beatsaber-hook/shared/config/rapidjson-utils.hpp"
 
+class JSONException : public std::exception {
+    private:
+        const char* error;
+        std::string message;
+    public:
+        explicit JSONException(const std::string& message) : message(message) {
+            error = message.c_str();
+        }
+        const char* what() const noexcept override {
+            return error;
+        }
+};
+
+class JSONClass {
+    protected:
+        std::vector<std::function<void(rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)>> serializers;
+        std::vector<std::function<void(const rapidjson::Value& jsonValue)>> deserializers;
+    public:
+        virtual void Deserialize(const rapidjson::Value& jsonValue) {
+            for(auto& method : deserializers)
+                method(jsonValue);
+        }
+        virtual rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) {
+            rapidjson::Value jsonObject(rapidjson::kObjectType);
+            for(auto& method : serializers)
+                method(jsonObject, allocator);
+            return jsonObject;
+        }
+};
+
+template<class T>
+concept JSONClassDerived = std::is_base_of_v<JSONClass, T>;
+
 namespace rapidjson_macros_types {
 
     template<class T, class R>

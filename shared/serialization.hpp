@@ -142,3 +142,31 @@ if(name) { \
     } \
     jsonObject.AddMember(rapidjson_macros_types::GetJSONString(jsonName, allocator), name##_jsonArray, allocator); \
 }
+
+template<JSONClassDerived T>
+static void ReadFromFile(std::string_view path, T& toDeserialize) {
+    if(!fileexists(path))
+        throw JSONException("file not found");
+    auto json = readfile(path);
+
+    rapidjson::Document document;
+    document.Parse(json);
+    if(document.HasParseError() || !document.IsObject())
+        throw JSONException("file could not be parsed as json");
+    
+    toDeserialize.Deserialize(document.GetObject());
+}
+
+template<JSONClassDerived T>
+static bool WriteToFile(std::string_view path, T& toSerialize) {
+    rapidjson::Document document;
+    document.SetObject();
+    toSerialize.Serialize(document.GetAllocator()).Swap(document);
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    document.Accept(writer);
+    std::string s = buffer.GetString();
+
+    return writefile(path, s);
+}

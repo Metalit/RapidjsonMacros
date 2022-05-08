@@ -38,11 +38,28 @@ concept JSONClassDerived = std::is_base_of_v<JSONClass, T>;
 namespace rapidjson_macros_types {
 
     template<class T, class R>
-    R GetJSONString(T&& string, rapidjson::Document::AllocatorType& allocator allocator) {
-        if constexpr(std::is_same<const char*, T>::value) {
-            return string;
-        }
+    R GetJSONString(const T& string, rapidjson::Document::AllocatorType& allocator);
+
+    template<class T>
+    rapidjson::Value& GetJSONString(const T& string, rapidjson::Document::AllocatorType& allocator) {
         return rapidjson::Value(string, allocator).Move();
+    }
+    template<>
+    const char* const& GetJSONString(const char* const& string, rapidjson::Document::AllocatorType& allocator) {
+        return string;
+    }
+
+    template<class T>
+    rapidjson::Value& CreateJSONValue(T& value, rapidjson::Document::AllocatorType& allocator) {
+        return rapidjson::Value(value).Move();
+    }
+    template<>
+    rapidjson::Value& CreateJSONValue(const std::string& value, rapidjson::Document::AllocatorType& allocator) {
+        return rapidjson::Value(value, allocator).Move();
+    }
+    template<>
+    rapidjson::Value& CreateJSONValue(std::string& value, rapidjson::Document::AllocatorType& allocator) {
+        return rapidjson::Value(value, allocator).Move();
     }
     
     template<class T>

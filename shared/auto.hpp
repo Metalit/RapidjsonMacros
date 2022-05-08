@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rapidjson-macros/shared/serialization.hpp"
+#include "../shared/serialization.hpp"
 
 #define SPECIALIZATION(prefix, type, macro) \
 prefix void Deserialize(type& var, const char* const& jsonName, const rapidjson::Value& jsonValue) { \

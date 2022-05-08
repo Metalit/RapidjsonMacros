@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rapidjson-macros/shared/auto.hpp"
+#include "../shared/auto.hpp"
 
 #define DECLARE_JSON_CLASS(namespaze, name, ...) \
 namespace namespaze { \

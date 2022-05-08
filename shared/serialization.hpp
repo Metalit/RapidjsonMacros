@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rapidjson-macros/shared/types.hpp"
+#include "../shared/types.hpp"
 
 #define DESERIALIZE_VALUE(name, jsonName) \
 if (!jsonValue.HasMember(jsonName)) throw JSONException(std::string(jsonName) + " not found"); \

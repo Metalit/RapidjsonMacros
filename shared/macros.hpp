@@ -23,32 +23,32 @@ namespace namespaze { \
 }
 
 // declare a manual deserialize method to add custom code defined in DESERIALIZE_METHOD
-// code specified will run before automatic values and actions
+// code specified will run after automatic values and actions
 #define MANUAL_DESERIALIZE_METHOD void Deserialize(const rapidjson::Value& jsonValue);
 
 // declare a manual serialize method to add custom code defined in SERIALIZE_METHOD
-// code specified will run before automatic values and actions
+// code specified will run after automatic values and actions
 #define MANUAL_SERIALIZE_METHOD rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator);
 
 // use this macro to define a custom deserialize method outside of your class definition
-// code specified will run before automatic values and actions
+// code specified will run after automatic values and actions
 #define DESERIALIZE_METHOD(namespaze, name, ...) \
 void namespaze::name::Deserialize(const rapidjson::Value& jsonValue) { \
-    __VA_ARGS__ \
     _Deserialize(jsonValue); \
+    __VA_ARGS__ \
 }
 
 // use this macro to define a custom serialize method outside of your class definition
-// code specified will run before automatic values and actions
+// code specified will run after automatic values and actions
 #define SERIALIZE_METHOD(namespaze, name, ...) \
 rapidjson::Value namespaze::name::Serialize(rapidjson::Document::AllocatorType& allocator) { \
     rapidjson::Value jsonObject(rapidjson::kObjectType); \
-    __VA_ARGS__ \
     _Serialize(jsonObject, allocator); \
+    __VA_ARGS__ \
     return jsonObject; \
 }
 
-// add an action to be run during deserialization
+// add an action to be run during deserialization (requires an identifier unique to the class)
 // will most likely be run in the order of fields in your class definition
 #define DESERIALIZE_ACTION(uid, ...) \
 struct _DeserializeAction_##uid { \
@@ -60,7 +60,7 @@ struct _DeserializeAction_##uid { \
 } \
 static inline _DeserializeAction_##uid _##uid##_DeserializeActionInstance;
 
-// add an action to be run during serialization
+// add an action to be run during serialization (requires an identifier unique to the class)
 // will most likely be run in the order of fields in your class definition
 #define SERIALIZE_ACTION(uid, ...) \
 struct _SerializeAction_##uid { \

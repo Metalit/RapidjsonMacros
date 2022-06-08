@@ -39,6 +39,26 @@ rapidjson::Value namespaze::name::Serialize(rapidjson::Document::AllocatorType& 
     return jsonObject; \
 }
 
+#define DESERIALIZE_ACTION(uid, ...) \
+struct _DeserializeAction_##uid { \
+    _DeserializeAction_##uid() { \
+        deserializers.emplace_back([](auto* outerClass, const rapidjson::Value& jsonValue) { \
+            __VA_ARGS__ \
+        }); \
+    } \
+} \
+static inline _DeserializeAction_##uid _##uid##_DeserializeActionInstance;
+
+#define SERIALIZE_ACTION(uid, ...) \
+struct _SerializeAction_##uid { \
+    _SerializeAction_##uid() { \
+        serializers.emplace_back([](auto* outerClass, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+            __VA_ARGS__ \
+        }); \
+    } \
+} \
+static inline _SerializeAction_##uid _##uid##_SerializeActionInstance;
+
 #define NAMED_AUTO_VALUE(type, name, jsonName) \
 type name; \
 struct _JSONValueAdder_##name { \

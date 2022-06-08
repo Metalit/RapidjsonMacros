@@ -57,7 +57,7 @@ struct _DeserializeAction_##uid { \
             __VA_ARGS__ \
         }); \
     } \
-} \
+}; \
 static inline _DeserializeAction_##uid _##uid##_DeserializeActionInstance;
 
 // add an action to be run during serialization (requires an identifier unique to the class)
@@ -69,7 +69,7 @@ struct _SerializeAction_##uid { \
             __VA_ARGS__ \
         }); \
     } \
-} \
+}; \
 static inline _SerializeAction_##uid _##uid##_SerializeActionInstance;
 
 // define an automatically serialized / deserialized instance variable with a custom name in the json file

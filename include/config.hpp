@@ -2,6 +2,10 @@
 
 #include "shared/macros.hpp"
 
+#include "beatsaber-hook/shared/utils/logging.hpp"
+
+Logger& getLogger();
+
 DECLARE_JSON_CLASS(RapidjsonMacros, SmallSubclass,
     AUTO_VALUE_DEFAULT(double, DoubleValue, 1.0 / 2.5)
 )
@@ -17,17 +21,25 @@ SERIALIZE_METHOD(RapidjsonMacros, Subclass,
     SERIALIZE_VALUE(IntValue, "CustomNamedIntValue")
     SERIALIZE_VALUE(FloatValue, "FloatValue")
     SERIALIZE_VALUE_OPTIONAL(StringValue, "StringValue")
+    getLogger().info("Serializing subclass!");
 )
 DESERIALIZE_METHOD(RapidjsonMacros, Subclass,
     DESERIALIZE_VALUE(IntValue, "CustomNamedIntValue")
     DESERIALIZE_VALUE_DEFAULT(FloatValue, "FloatValue", 0)
     DESERIALIZE_VALUE_OPTIONAL(StringValue, "StringValue")
+    getLogger().info("Deserializing subclass!");
 )
 
 DECLARE_JSON_CLASS(RapidjsonMacros, AutoSubclass,
     NAMED_AUTO_VALUE(int, IntValue, "CustomNamedIntValue")
     AUTO_VALUE_DEFAULT(float, FloatValue, 0)
     AUTO_VALUE_OPTIONAL(std::string, StringValue)
+    SERIALIZE_ACTION(0,
+        getLogger().info("Serializing auto subclass!");
+    )
+    DESERIALIZE_ACTION(0,
+        getLogger().info("Deserializing auto subclass!");
+    )
 )
 
 DECLARE_JSON_CLASS(RapidjsonMacros, TestClass,

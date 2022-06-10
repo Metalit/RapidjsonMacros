@@ -18,8 +18,8 @@ namespace namespaze { \
                     method(this, jsonValue); \
             } \
         public: \
-            __VA_ARGS__ \
             bool operator==(const class name&) const = default; \
+            __VA_ARGS__ \
     }; \
 }
 
@@ -52,6 +52,7 @@ rapidjson::Value namespaze::name::Serialize(rapidjson::Document::AllocatorType& 
 // add an action to be run during deserialization (requires an identifier unique to the class)
 // will most likely be run in the order of fields in your class definition
 #define DESERIALIZE_ACTION(uid, ...) \
+private: \
 struct _DeserializeAction_##uid { \
     _DeserializeAction_##uid() { \
         deserializers.emplace_back([](auto* outerClass, const rapidjson::Value& jsonValue) { \
@@ -64,6 +65,7 @@ static inline _DeserializeAction_##uid _##uid##_DeserializeActionInstance;
 // add an action to be run during serialization (requires an identifier unique to the class)
 // will most likely be run in the order of fields in your class definition
 #define SERIALIZE_ACTION(uid, ...) \
+private: \
 struct _SerializeAction_##uid { \
     _SerializeAction_##uid() { \
         serializers.emplace_back([](auto* outerClass, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
@@ -75,7 +77,9 @@ static inline _SerializeAction_##uid _##uid##_SerializeActionInstance;
 
 // define an automatically serialized / deserialized instance variable with a custom name in the json file
 #define NAMED_AUTO_VALUE(type, name, jsonName) \
+public: \
 type name; \
+private: \
 struct _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
         serializers.emplace_back([](auto* outerClass, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
@@ -90,7 +94,9 @@ static inline _JSONValueAdder_##name _##name##_JSONValueAdderInstance;
 
 // define an automatically serialized / deserialized std::optional instance variable with a custom name in the json file
 #define NAMED_AUTO_VALUE_OPTIONAL(type, name, jsonName) \
+public: \
 std::optional<type> name = std::nullopt; \
+private: \
 struct _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
         serializers.emplace_back([](auto* outerClass, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
@@ -105,7 +111,9 @@ static inline _JSONValueAdder_##name _##name##_JSONValueAdderInstance;
 
 // define an automatically serialized / deserialized instance variable with a custom name in the json file and a default value
 #define NAMED_AUTO_VALUE_DEFAULT(type, name, def, jsonName) \
+public: \
 type name = def; \
+private: \
 struct _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
         serializers.emplace_back([](auto* outerClass, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \

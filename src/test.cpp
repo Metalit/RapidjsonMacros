@@ -5,7 +5,9 @@
 static ModInfo modInfo;
 
 RapidjsonMacros::TestClass testClass;
+RapidjsonMacros::TestClass testClass2;
 RapidjsonMacros::AutoTestClass autoTestClass;
+RapidjsonMacros::AutoTestClass autoTestClass2;
 
 Logger& getLogger() {
     static Logger* logger = new Logger(modInfo);
@@ -32,14 +34,18 @@ void setup(ModInfo& info) {
 
     try {
         ReadFromFile(GetConfigPath(), testClass);
+        ReadFromFile(GetConfigPath(), testClass2);
     } catch(const std::exception& e) {
-        getLogger().error("error reading test class 1: %s", e.what());
+        getLogger().error("error reading test class: %s", e.what());
     }
+    CRASH_UNLESS(testClass == testClass2);
     try {
         ReadFromFile(GetConfigPath(), autoTestClass);
+        ReadFromFile(GetConfigPath(), autoTestClass2);
     } catch(const std::exception& e) {
-        getLogger().error("error reading test class 2: %s", e.what());
+        getLogger().error("error reading auto test class: %s", e.what());
     }
+    CRASH_UNLESS(autoTestClass == autoTestClass2);
 	
     getLogger().info("Completed setup!");
 }

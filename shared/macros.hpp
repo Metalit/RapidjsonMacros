@@ -19,6 +19,7 @@ namespace namespaze { \
             } \
         public: \
             __VA_ARGS__ \
+            bool operator==(const class name&) const = default; \
     }; \
 }
 

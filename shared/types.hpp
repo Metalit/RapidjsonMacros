@@ -25,6 +25,7 @@ class JSONClass {
             _Serialize(jsonObject, allocator);
             return jsonObject;
         }
+        bool operator==(const JSONClass&) const = default; \
 };
 
 template<class T>

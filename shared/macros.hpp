@@ -10,9 +10,13 @@ namespace namespaze { \
         private: \
             static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> serializers; \
             static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonValue)> deserializers; \
+            CopyableValue extraFields; \
+            static inline bool keepExtraFields = true; \
         public: \
             rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) { \
                 rapidjson::Value jsonObject(rapidjson::kObjectType); \
+                if(keepExtraFields) \
+                    jsonObject.CopyFrom(extraFields.document, allocator); \
                 for(auto& method : serializers) \
                     method(this, jsonObject, allocator); \
                 return jsonObject; \
@@ -20,11 +24,24 @@ namespace namespaze { \
             void Deserialize(rapidjson::Value& jsonValue) { \
                 for(auto& method : deserializers) \
                     method(this, jsonValue); \
+                if(keepExtraFields) \
+                    extraFields = jsonValue; \
             } \
             bool operator==(const class name&) const = default; \
             __VA_ARGS__ \
     }; \
 }
+
+// prevents the class from preserving json data not specified in class fields and serialization
+#define DISCARD_EXTRA_FIELDS \
+private: \
+friend struct _ExtraFieldBoolSetter; \
+struct _ExtraFieldBoolSetter { \
+    _ExtraFieldBoolSetter() { \
+        SelfType::keepExtraFields = false; \
+    } \
+}; \
+static inline _ExtraFieldBoolSetter _ExtraFieldBoolSetterInstance;
 
 // add an action to be run during deserialization (requires an identifier unique to the class)
 // will most likely be run in the order of fields in your class definition
@@ -32,7 +49,7 @@ namespace namespaze { \
 private: \
 struct _DeserializeAction_##uid { \
     _DeserializeAction_##uid() { \
-        deserializers.emplace_back([](auto* outerClass, const rapidjson::Value& jsonValue) { \
+        deserializers.emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
             __VA_ARGS__ \
         }); \
     } \
@@ -45,7 +62,7 @@ static inline _DeserializeAction_##uid _##uid##_DeserializeActionInstance;
 private: \
 struct _SerializeAction_##uid { \
     _SerializeAction_##uid() { \
-        serializers.emplace_back([](auto* outerClass, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serializers.emplace_back([](SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             __VA_ARGS__ \
         }); \
     } \
@@ -59,11 +76,11 @@ type name; \
 private: \
 struct _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
-        serializers.emplace_back([](auto* outerClass, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
-            rapidjson_macros_auto::Serialize(outerClass->name, jsonName, jsonObject, allocator); \
+        serializers.emplace_back([](SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+            rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
         }); \
-        deserializers.emplace_back([](auto* outerClass, const rapidjson::Value& jsonValue) { \
-            rapidjson_macros_auto::Deserialize(outerClass->name, jsonName, jsonValue); \
+        deserializers.emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
+            rapidjson_macros_auto::Deserialize(self->name, jsonName, jsonValue); \
         }); \
     } \
 }; \
@@ -76,11 +93,11 @@ std::optional<type> name = std::nullopt; \
 private: \
 struct _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
-        serializers.emplace_back([](auto* outerClass, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
-            rapidjson_macros_auto::SerializeOptional(outerClass->name, jsonName, jsonObject, allocator); \
+        serializers.emplace_back([](SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+            rapidjson_macros_auto::SerializeOptional(self->name, jsonName, jsonObject, allocator); \
         }); \
-        deserializers.emplace_back([](auto* outerClass, const rapidjson::Value& jsonValue) { \
-            rapidjson_macros_auto::DeserializeOptional(outerClass->name, jsonName, jsonValue); \
+        deserializers.emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
+            rapidjson_macros_auto::DeserializeOptional(self->name, jsonName, jsonValue); \
         }); \
     } \
 }; \
@@ -93,11 +110,11 @@ type name = def; \
 private: \
 struct _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
-        serializers.emplace_back([](auto* outerClass, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
-            rapidjson_macros_auto::Serialize(outerClass->name, jsonName, jsonObject, allocator); \
+        serializers.emplace_back([](SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+            rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
         }); \
-        deserializers.emplace_back([](auto* outerClass, const rapidjson::Value& jsonValue) { \
-            rapidjson_macros_auto::DeserializeDefault(outerClass->name, jsonName, def, jsonValue); \
+        deserializers.emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
+            rapidjson_macros_auto::DeserializeDefault(self->name, jsonName, def, jsonValue); \
         }); \
     } \
 }; \

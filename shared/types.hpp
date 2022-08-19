@@ -22,6 +22,26 @@ class JSONClass {
 template<class T>
 concept JSONClassDerived = std::is_base_of_v<JSONClass, T>;
 
+class CopyableValue {
+    public:
+    rapidjson::Document document;
+    // constructors
+    CopyableValue() = default;
+    CopyableValue(const rapidjson::Value& val) {
+        document.CopyFrom(val, document.GetAllocator());
+    }
+    CopyableValue(const CopyableValue& copyable) : CopyableValue(copyable.document) {}
+    // assignment
+    void operator=(const rapidjson::Value& val) {
+        document.CopyFrom(val, document.GetAllocator());
+    }
+    void operator=(const CopyableValue& copyable) {
+        document.CopyFrom(copyable.document, document.GetAllocator());
+    }
+    // comparison
+    bool operator==(const class CopyableValue&) const { return true; };
+};
+
 namespace rapidjson_macros_types {
     
     template<class T>
@@ -80,32 +100,32 @@ namespace rapidjson_macros_types {
     }
     
     template<class T>
-    inline T GetValueType(const rapidjson::Value& jsonValue, const T& _) {
+    inline T GetValueType(rapidjson::Value& jsonValue, const T& _) {
         return jsonValue.Get<T>();
     }
 
     template<class T>
-    inline bool GetIsType(const rapidjson::Value& jsonValue, const T& _) {
+    inline bool GetIsType(rapidjson::Value& jsonValue, const T& _) {
         return jsonValue.Is<T>();
     }
 
     template<class T>
-    inline T GetValueTypeOptional(const rapidjson::Value& jsonValue, const std::optional<T>& _) {
+    inline T GetValueTypeOptional(rapidjson::Value& jsonValue, const std::optional<T>& _) {
         return jsonValue.Get<T>();
     }
 
     template<class T>
-    inline bool GetIsTypeOptional(const rapidjson::Value& jsonValue, const std::optional<T>& _) {
+    inline bool GetIsTypeOptional(rapidjson::Value& jsonValue, const std::optional<T>& _) {
         return jsonValue.Is<T>();
     }
 
     template<class T>
-    inline T GetValueTypeVector(const rapidjson::Value& jsonValue, const std::vector<T>& _) {
+    inline T GetValueTypeVector(rapidjson::Value& jsonValue, const std::vector<T>& _) {
         return jsonValue.Get<T>();
     }
 
     template<class T>
-    inline T GetValueTypeVectorOptional(const rapidjson::Value& jsonValue, const std::optional<std::vector<T>>& _) {
+    inline T GetValueTypeVectorOptional(rapidjson::Value& jsonValue, const std::optional<std::vector<T>>& _) {
         return jsonValue.Get<T>();
     }
 

@@ -10,17 +10,20 @@ if (!jsonValue.HasMember(jsonName)) throw JSONException(std::string(jsonName) + 
 auto& value = jsonValue[jsonName]; \
 if (!rapidjson_macros_types::GetIsType(value, name)) throw JSONException(RAPIDJSON_MACROS_TYPE_EXCEPTION_STRING(name, jsonName)); \
 name = rapidjson_macros_types::GetValueType(value, name); \
+jsonValue.RemoveMember(jsonName); }
 
 #define DESERIALIZE_VALUE_OPTIONAL(name, jsonName) \
 if(jsonValue.HasMember(jsonName) && rapidjson_macros_types::GetIsTypeOptional(jsonValue[jsonName], name)) { \
     auto& value = jsonValue[jsonName]; \
     name = rapidjson_macros_types::GetValueTypeOptional(value, name); \
+    jsonValue.RemoveMember(jsonName); \
 } else name = std::nullopt;
 
 #define DESERIALIZE_VALUE_DEFAULT(name, jsonName, def) \
 if(jsonValue.HasMember(jsonName) && rapidjson_macros_types::GetIsType(jsonValue[jsonName], name)) { \
     auto& value = jsonValue[jsonName]; \
     name = rapidjson_macros_types::GetValueType(value, name); \
+    jsonValue.RemoveMember(jsonName); \
 } else name = def;
 
 #define DESERIALIZE_CLASS(name, jsonName) { \
@@ -28,18 +31,21 @@ if (!jsonValue.HasMember(jsonName)) throw JSONException(std::string(jsonName) + 
 auto& value = jsonValue[jsonName]; \
 if (!value.IsObject()) throw JSONException(RAPIDJSON_MACROS_TYPE_EXCEPTION_STRING(name, jsonName)); \
 name.Deserialize(value); \
+jsonValue.RemoveMember(jsonName); }
 
 #define DESERIALIZE_CLASS_OPTIONAL(name, jsonName) \
 if(jsonValue.HasMember(jsonName) && jsonValue[jsonName].IsObject()) { \
     if(!name.has_value()) name.emplace(); \
     auto& value = jsonValue[jsonName]; \
     name->Deserialize(value); \
+    jsonValue.RemoveMember(jsonName); \
 } else name = std::nullopt;
 
 #define DESERIALIZE_CLASS_DEFAULT(name, jsonName, def) \
 if(jsonValue.HasMember(jsonName) && jsonValue[jsonName].IsObject()) { \
     auto& value = jsonValue[jsonName]; \
     name->Deserialize(value); \
+    jsonValue.RemoveMember(jsonName); \
 } else name = def;
 
 // seems to assume vector is of another json class
@@ -53,7 +59,7 @@ if(value.IsArray()) { \
         value.Deserialize(*it); \
         name.push_back(value); \
     } \
-    jsonValue.RemoveMember(value); \
+    jsonValue.RemoveMember(jsonName); \
 } else throw JSONException(RAPIDJSON_MACROS_TYPE_EXCEPTION_STRING(name, jsonName)); }
 
 #define DESERIALIZE_VECTOR_OPTIONAL(name, jsonName) \
@@ -66,6 +72,7 @@ if(jsonValue.HasMember(jsonName) && jsonValue[jsonName].IsArray()) { \
         value.Deserialize(*it); \
         name->push_back(value); \
     } \
+    jsonValue.RemoveMember(jsonName); \
 } else name = std::nullopt;
 
 #define DESERIALIZE_VECTOR_DEFAULT(name, jsonName, def) \
@@ -77,6 +84,7 @@ if(jsonValue.HasMember(jsonName) && jsonValue[jsonName].IsArray()) { \
         value.Deserialize(*it); \
         name.push_back(value); \
     } \
+    jsonValue.RemoveMember(jsonName); \
 } else name = def;
 
 #define DESERIALIZE_VECTOR_BASIC(name, jsonName) { \
@@ -87,6 +95,7 @@ if(value.IsArray()) { \
     for (auto it = value.Begin(); it != value.End(); ++it) { \
         name.push_back(rapidjson_macros_types::GetValueTypeVector(*it, name)); \
     } \
+    jsonValue.RemoveMember(jsonName); \
 } else throw JSONException(RAPIDJSON_MACROS_TYPE_EXCEPTION_STRING(name, jsonName)); }
 
 #define DESERIALIZE_VECTOR_BASIC_OPTIONAL(name, jsonName) \
@@ -97,6 +106,7 @@ if(jsonValue.HasMember(jsonName) && jsonValue[jsonName].IsArray()) { \
     for (auto it = value.Begin(); it != value.End(); ++it) { \
         name->push_back(rapidjson_macros_types::GetValueTypeVectorOptional(*it, name)); \
     } \
+    jsonValue.RemoveMember(jsonName); \
 } else name = std::nullopt;
 
 #define DESERIALIZE_VECTOR_BASIC_DEFAULT(name, jsonName, def) \
@@ -106,6 +116,7 @@ if(jsonValue.HasMember(jsonName) && jsonValue[jsonName].IsArray()) { \
     for (auto it = value.Begin(); it != value.End(); ++it) { \
         name.push_back(rapidjson_macros_types::GetValueTypeVector(*it, name)); \
     } \
+    jsonValue.RemoveMember(jsonName); \
 } else name = def;
 
 #define SERIALIZE_VALUE(name, jsonName) \

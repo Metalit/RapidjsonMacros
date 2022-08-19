@@ -6,8 +6,6 @@ static ModInfo modInfo;
 
 RapidjsonMacros::TestClass testClass;
 RapidjsonMacros::TestClass testClass2;
-RapidjsonMacros::AutoTestClass autoTestClass;
-RapidjsonMacros::AutoTestClass autoTestClass2;
 
 Logger& getLogger() {
     static Logger* logger = new Logger(modInfo, {false, true});
@@ -45,19 +43,6 @@ extern "C" void setup(ModInfo& info) {
     } catch(const std::exception& e) {
         getLogger().error("error writing test class: %s", e.what());
     }
-    try {
-        ReadFromFile(GetConfigPath(), autoTestClass);
-        ReadFromFile(GetConfigPath(), autoTestClass2);
-    } catch(const std::exception& e) {
-        getLogger().error("error reading auto test class: %s", e.what());
-    }
-    try {
-        WriteToFile(GetConfigPath(), autoTestClass);
-        WriteToFile(GetConfigPath(), autoTestClass2);
-    } catch(const std::exception& e) {
-        getLogger().error("error writing auto test class: %s", e.what());
-    }
-    CRASH_UNLESS(autoTestClass == autoTestClass2);
 	
     getLogger().info("Completed setup!");
 }

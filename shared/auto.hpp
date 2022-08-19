@@ -3,13 +3,13 @@
 #include "../shared/serialization.hpp"
 
 #define SPECIALIZATION(type, macro, ...) \
-__VA_ARGS__ void Deserialize(type& var, const char (&jsonName)[N], const rapidjson::Value& jsonValue) { \
+__VA_ARGS__ void Deserialize(type& var, const char (&jsonName)[N], rapidjson::Value& jsonValue) { \
     DESERIALIZE_##macro(var, jsonName); \
 } \
-__VA_ARGS__ void DeserializeOptional(std::optional<type>& var, const char (&jsonName)[N], const rapidjson::Value& jsonValue) { \
+__VA_ARGS__ void DeserializeOptional(std::optional<type>& var, const char (&jsonName)[N], rapidjson::Value& jsonValue) { \
     DESERIALIZE_##macro##_OPTIONAL(var, jsonName); \
 } \
-__VA_ARGS__ void DeserializeDefault(type& var, const char (&jsonName)[N], const type& defaultValue, const rapidjson::Value& jsonValue) { \
+__VA_ARGS__ void DeserializeDefault(type& var, const char (&jsonName)[N], const type& defaultValue, rapidjson::Value& jsonValue) { \
     DESERIALIZE_##macro##_DEFAULT(var, jsonName, defaultValue); \
 } \
 __VA_ARGS__ void Serialize(type& var, const char (&jsonName)[N], rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
@@ -26,11 +26,11 @@ SPECIALIZATION(std::vector<type>, VECTOR_BASIC, template<std::size_t N = 0>)
 namespace rapidjson_macros_auto {
 
     template<class T, std::size_t N = 0>
-    void Deserialize(T& var, const char (&jsonName)[N], const rapidjson::Value& jsonValue);
+    void Deserialize(T& var, const char (&jsonName)[N], rapidjson::Value& jsonValue);
     template<class T, std::size_t N = 0>
-    void DeserializeOptional(std::optional<T>& var, const char (&jsonName)[N], const rapidjson::Value& jsonValue);
+    void DeserializeOptional(std::optional<T>& var, const char (&jsonName)[N], rapidjson::Value& jsonValue);
     template<class T, std::size_t N = 0>
-    void DeserializeDefault(T& var, const char (&jsonName)[N], const T& defaultValue, const rapidjson::Value& jsonValue);
+    void DeserializeDefault(T& var, const char (&jsonName)[N], const T& defaultValue, rapidjson::Value& jsonValue);
     
     template<class T, std::size_t N = 0>
     void Serialize(T& var, const char (&jsonName)[N], rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);

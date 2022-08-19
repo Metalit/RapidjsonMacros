@@ -20,6 +20,7 @@ DECLARE_JSON_CLASS(RapidjsonMacros, Subclass,
     DESERIALIZE_ACTION(0,
         getLogger().info("Deserializing subclass!");
     )
+    DISCARD_EXTRA_FIELDS
 )
 
 DECLARE_JSON_CLASS(RapidjsonMacros, TestClass,

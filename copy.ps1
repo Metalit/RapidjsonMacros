@@ -46,10 +46,8 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-$modJson = Get-Content "./mod.json" -Raw | ConvertFrom-Json
-$modFiles = $modJson.modFiles
-
-foreach ($fileName in $modFiles) {
+foreach ($child in (Get-Childitem -Path build\* -File -Include librapidjson-macros*)) {
+    $fileName = $child.Name
     if ($useDebug -eq $true) {
         & adb push build/debug/$fileName /sdcard/Android/data/com.beatgames.beatsaber/files/mods/$fileName
     } else {

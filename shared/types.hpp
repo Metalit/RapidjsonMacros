@@ -13,18 +13,9 @@ class JSONException : public std::exception {
 };
 
 class JSONClass {
-    protected:
-        virtual void _Deserialize(const rapidjson::Value& jsonValue) = 0;
-        virtual void _Serialize(rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) = 0;
     public:
-        virtual void Deserialize(const rapidjson::Value& jsonValue) {
-            _Deserialize(jsonValue);
-        }
-        virtual rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) {
-            rapidjson::Value jsonObject(rapidjson::kObjectType);
-            _Serialize(jsonObject, allocator);
-            return jsonObject;
-        }
+        virtual void Deserialize(rapidjson::Value& jsonValue) = 0;
+        virtual rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) = 0;
         bool operator==(const JSONClass&) const = default; \
 };
 

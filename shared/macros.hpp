@@ -6,47 +6,24 @@
 #define DECLARE_JSON_CLASS(namespaze, name, ...) \
 namespace namespaze { \
     class name : public JSONClass { \
+        using SelfType = name; \
         private: \
-            static inline std::vector<void(*)(name* outerClass, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> serializers; \
-            static inline std::vector<void(*)(name* outerClass, const rapidjson::Value& jsonValue)> deserializers; \
-            void _Serialize(rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+            static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> serializers; \
+            static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonValue)> deserializers; \
+        public: \
+            rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) { \
+                rapidjson::Value jsonObject(rapidjson::kObjectType); \
                 for(auto& method : serializers) \
                     method(this, jsonObject, allocator); \
+                return jsonObject; \
             } \
-            void _Deserialize(const rapidjson::Value& jsonValue) { \
+            void Deserialize(rapidjson::Value& jsonValue) { \
                 for(auto& method : deserializers) \
                     method(this, jsonValue); \
             } \
-        public: \
             bool operator==(const class name&) const = default; \
             __VA_ARGS__ \
     }; \
-}
-
-// declare a manual deserialize method to add custom code defined in DESERIALIZE_METHOD
-// code specified will run after automatic values and actions
-#define MANUAL_DESERIALIZE_METHOD void Deserialize(const rapidjson::Value& jsonValue);
-
-// declare a manual serialize method to add custom code defined in SERIALIZE_METHOD
-// code specified will run after automatic values and actions
-#define MANUAL_SERIALIZE_METHOD rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator);
-
-// use this macro to define a custom deserialize method outside of your class definition
-// code specified will run after automatic values and actions
-#define DESERIALIZE_METHOD(namespaze, name, ...) \
-void namespaze::name::Deserialize(const rapidjson::Value& jsonValue) { \
-    _Deserialize(jsonValue); \
-    __VA_ARGS__ \
-}
-
-// use this macro to define a custom serialize method outside of your class definition
-// code specified will run after automatic values and actions
-#define SERIALIZE_METHOD(namespaze, name, ...) \
-rapidjson::Value namespaze::name::Serialize(rapidjson::Document::AllocatorType& allocator) { \
-    rapidjson::Value jsonObject(rapidjson::kObjectType); \
-    _Serialize(jsonObject, allocator); \
-    __VA_ARGS__ \
-    return jsonObject; \
 }
 
 // add an action to be run during deserialization (requires an identifier unique to the class)

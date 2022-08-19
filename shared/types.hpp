@@ -32,6 +32,35 @@ template<class T>
 concept JSONClassDerived = std::is_base_of_v<JSONClass, T>;
 
 namespace rapidjson_macros_types {
+    
+    template<class T>
+    inline std::string CppTypeName(T& var) {
+        char* realname = abi::__cxa_demangle(typeid(var).name(), 0, 0, 0);
+        std::string s(realname);
+        free(realname);
+        return s;
+    }
+    inline std::string JsonTypeName(rapidjson::Value& jsonValue) {
+        auto type = jsonValue.GetType();
+        switch (type) {
+        case rapidjson::kNullType:
+            return "null";
+        case rapidjson::kFalseType:
+            return "false";
+        case rapidjson::kTrueType:
+            return "true";
+        case rapidjson::kObjectType:
+            return "object";
+        case rapidjson::kArrayType:
+            return "array";
+        case rapidjson::kStringType:
+            return "string";
+        case rapidjson::kNumberType:
+            return "number";
+        default:
+            return "unknown";
+        }
+    }
 
     template<class T, class R, std::size_t N = 0>
     inline R GetJSONString(const T& string, rapidjson::Document::AllocatorType& allocator);

@@ -10,7 +10,7 @@ namespace namespaze { \
         private: \
             static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> serializers; \
             static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonValue)> deserializers; \
-            CopyableValue extraFields; \
+            rapidjson_macros_types::CopyableValue extraFields; \
             static inline bool keepExtraFields = true; \
         public: \
             rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) { \

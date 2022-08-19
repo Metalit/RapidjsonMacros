@@ -22,27 +22,27 @@ class JSONClass {
 template<class T>
 concept JSONClassDerived = std::is_base_of_v<JSONClass, T>;
 
-class CopyableValue {
-    public:
-    rapidjson::Document document;
-    // constructors
-    CopyableValue() = default;
-    CopyableValue(const rapidjson::Value& val) {
-        document.CopyFrom(val, document.GetAllocator());
-    }
-    CopyableValue(const CopyableValue& copyable) : CopyableValue(copyable.document) {}
-    // assignment
-    void operator=(const rapidjson::Value& val) {
-        document.CopyFrom(val, document.GetAllocator());
-    }
-    void operator=(const CopyableValue& copyable) {
-        document.CopyFrom(copyable.document, document.GetAllocator());
-    }
-    // comparison
-    bool operator==(const class CopyableValue&) const { return true; };
-};
-
 namespace rapidjson_macros_types {
+
+    class CopyableValue {
+        public:
+        rapidjson::Document document;
+        // constructors
+        CopyableValue() = default;
+        CopyableValue(const rapidjson::Value& val) {
+            document.CopyFrom(val, document.GetAllocator());
+        }
+        CopyableValue(const CopyableValue& copyable) : CopyableValue(copyable.document) {}
+        // assignment
+        void operator=(const rapidjson::Value& val) {
+            document.CopyFrom(val, document.GetAllocator());
+        }
+        void operator=(const CopyableValue& copyable) {
+            document.CopyFrom(copyable.document, document.GetAllocator());
+        }
+        // comparison
+        bool operator==(const class CopyableValue&) const { return true; };
+    };
     
     template<class T>
     inline std::string CppTypeName(T& var) {

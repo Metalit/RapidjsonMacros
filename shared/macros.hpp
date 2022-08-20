@@ -70,7 +70,7 @@ struct _SerializeAction_##uid { \
 static inline _SerializeAction_##uid _##uid##_SerializeActionInstance;
 
 // define an automatically serialized / deserialized instance variable with a custom name in the json file
-#define NAMED_AUTO_VALUE(type, name, jsonName) \
+#define NAMED_VALUE(type, name, jsonName) \
 public: \
 type name; \
 private: \
@@ -87,7 +87,7 @@ struct _JSONValueAdder_##name { \
 static inline _JSONValueAdder_##name _##name##_JSONValueAdderInstance;
 
 // define an automatically serialized / deserialized std::optional instance variable with a custom name in the json file
-#define NAMED_AUTO_VALUE_OPTIONAL(type, name, jsonName) \
+#define NAMED_VALUE_OPTIONAL(type, name, jsonName) \
 public: \
 std::optional<type> name = std::nullopt; \
 private: \
@@ -104,7 +104,7 @@ struct _JSONValueAdder_##name { \
 static inline _JSONValueAdder_##name _##name##_JSONValueAdderInstance;
 
 // define an automatically serialized / deserialized instance variable with a custom name in the json file and a default value
-#define NAMED_AUTO_VALUE_DEFAULT(type, name, def, jsonName) \
+#define NAMED_VALUE_DEFAULT(type, name, def, jsonName) \
 public: \
 type name = def; \
 private: \
@@ -121,22 +121,22 @@ struct _JSONValueAdder_##name { \
 static inline _JSONValueAdder_##name _##name##_JSONValueAdderInstance;
 
 // define an automatically serialized / deserialized std::vector with a custom name in the json file
-#define NAMED_AUTO_VECTOR(type, name, jsonName) NAMED_AUTO_VALUE(std::vector<type>, name, jsonName)
+#define NAMED_VECTOR(type, name, jsonName) NAMED_VALUE(std::vector<type>, name, jsonName)
 
 // define an automatically serialized / deserialized std::optional<std::vector> with a custom name in the json file
-#define NAMED_AUTO_VECTOR_OPTIONAL(type, name, jsonName) NAMED_AUTO_VALUE_OPTIONAL(std::vector<type>, name, jsonName)
+#define NAMED_VECTOR_OPTIONAL(type, name, jsonName) NAMED_VALUE_OPTIONAL(std::vector<type>, name, jsonName)
 
 // define an automatically serialized / deserialized std::vector with a custom name in the json file and a default value
-#define NAMED_AUTO_VECTOR_DEFAULT(type, name, def, jsonName) NAMED_AUTO_VALUE_DEFAULT(std::vector<type>, name, def, jsonName)
+#define NAMED_VECTOR_DEFAULT(type, name, def, jsonName) NAMED_VALUE_DEFAULT(std::vector<type>, name, def, jsonName)
 
 // versions of the macros above that use the name of the instance variable as the name in the json file
-#define AUTO_VALUE(type, name) NAMED_AUTO_VALUE(type, name, #name)
-#define AUTO_VALUE_OPTIONAL(type, name) NAMED_AUTO_VALUE_OPTIONAL(type, name, #name)
-#define AUTO_VALUE_DEFAULT(type, name, def) NAMED_AUTO_VALUE_DEFAULT(type, name, def, #name)
+#define VALUE(type, name) NAMED_VALUE(type, name, #name)
+#define VALUE_OPTIONAL(type, name) NAMED_VALUE_OPTIONAL(type, name, #name)
+#define VALUE_DEFAULT(type, name, def) NAMED_VALUE_DEFAULT(type, name, def, #name)
 
-#define AUTO_VECTOR(type, name) NAMED_AUTO_VECTOR(type, name, #name)
-#define AUTO_VECTOR_OPTIONAL(type, name) NAMED_AUTO_VECTOR_OPTIONAL(type, name, #name)
-#define AUTO_VECTOR_DEFAULT(type, name, def) NAMED_AUTO_VECTOR_DEFAULT(type, name, def, #name)
+#define VECTOR(type, name) NAMED_VECTOR(type, name, #name)
+#define VECTOR_OPTIONAL(type, name) NAMED_VECTOR_OPTIONAL(type, name, #name)
+#define VECTOR_DEFAULT(type, name, def) NAMED_VECTOR_DEFAULT(type, name, def, #name)
 
 // multiple candidate names can be used for deserialization, and the first name will be used for serialization
 #define NAME_OPTS(...) std::vector({__VA_ARGS__})

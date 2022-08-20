@@ -11,6 +11,7 @@ DECLARE_JSON_CLASS(RapidjsonMacros, SmallSubclass,
 )
 
 DECLARE_JSON_CLASS(RapidjsonMacros, Subclass,
+    NAMED_AUTO_VALUE(bool, BoolValue, NAME_OPTS("BoolValueName1", "BoolValueName2", "BoolValueName3"))
     NAMED_AUTO_VALUE(int, IntValue, "CustomNamedIntValue")
     AUTO_VALUE_DEFAULT(float, FloatValue, 0)
     AUTO_VALUE_OPTIONAL(std::string, StringValue)

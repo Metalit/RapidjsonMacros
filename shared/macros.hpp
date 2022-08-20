@@ -137,3 +137,6 @@ static inline _JSONValueAdder_##name _##name##_JSONValueAdderInstance;
 #define AUTO_VECTOR(type, name) NAMED_AUTO_VECTOR(type, name, #name)
 #define AUTO_VECTOR_OPTIONAL(type, name) NAMED_AUTO_VECTOR_OPTIONAL(type, name, #name)
 #define AUTO_VECTOR_DEFAULT(type, name, def) NAMED_AUTO_VECTOR_DEFAULT(type, name, def, #name)
+
+// multiple candidate names can be used for deserialization, and the first name will be used for serialization
+#define NAME_OPTS(...) std::vector({__VA_ARGS__})

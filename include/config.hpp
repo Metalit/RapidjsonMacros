@@ -14,12 +14,15 @@ DECLARE_JSON_CLASS(RapidjsonMacros, Subclass,
     NAMED_VALUE(bool, BoolValue, NAME_OPTS("BoolValueName1", "BoolValueName2", "BoolValueName3"))
     NAMED_VALUE(int, IntValue, "CustomNamedIntValue")
     VALUE_DEFAULT(float, FloatValue, 0)
+    private:
     VALUE_OPTIONAL(std::string, StringValue)
     SERIALIZE_ACTION(0,
         getLogger().info("Serializing subclass!");
+        bool privateVariablesAccessible = self->StringValue.has_value();
     )
     DESERIALIZE_ACTION(0,
         getLogger().info("Deserializing subclass!");
+        bool privateVariablesAccessible = self->StringValue.has_value();
     )
     DISCARD_EXTRA_FIELDS
 )

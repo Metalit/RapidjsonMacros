@@ -80,7 +80,6 @@ static inline _SerializeAction_##uid _##uid##_SerializeActionInstance;
 // define an automatically serialized / deserialized instance variable with a custom name in the json file
 #pragma region NAMED_VALUE(type, name, jsonName)
 #define NAMED_VALUE(type, name, jsonName) \
-public: \
 type name; \
 private: \
 struct _JSONValueAdder_##name { \
@@ -99,7 +98,6 @@ static inline _JSONValueAdder_##name _##name##_JSONValueAdderInstance;
 // define an automatically serialized / deserialized std::optional instance variable with a custom name in the json file
 #pragma region NAMED_VALUE_OPTIONAL(type, name, jsonName)
 #define NAMED_VALUE_OPTIONAL(type, name, jsonName) \
-public: \
 std::optional<type> name = std::nullopt; \
 private: \
 struct _JSONValueAdder_##name { \
@@ -118,7 +116,6 @@ static inline _JSONValueAdder_##name _##name##_JSONValueAdderInstance;
 // define an automatically serialized / deserialized instance variable with a custom name in the json file and a default value
 #pragma region NAMED_VALUE_DEFAULT(type, name, default, jsonName)
 #define NAMED_VALUE_DEFAULT(type, name, def, jsonName) \
-public: \
 type name = def; \
 private: \
 struct _JSONValueAdder_##name { \

@@ -45,6 +45,11 @@ namespace rapidjson_macros_types {
     };
     
     template<class T>
+    struct ConstructorRunner {
+        ConstructorRunner() { T(); }
+    };
+    
+    template<class T>
     inline std::string CppTypeName(T& var) {
         char* realname = abi::__cxa_demangle(typeid(var).name(), 0, 0, 0);
         std::string s(realname);

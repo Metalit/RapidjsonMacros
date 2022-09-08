@@ -37,52 +37,50 @@ namespace namespaze { \
 // prevents the class from preserving json data not specified in class fields and serialization
 #pragma region DISCARD_EXTRA_FIELDS
 #define DISCARD_EXTRA_FIELDS \
-private: \
-friend struct _ExtraFieldBoolSetter; \
-struct _ExtraFieldBoolSetter { \
+class _ExtraFieldBoolSetter { \
     _ExtraFieldBoolSetter() { \
         SelfType::keepExtraFields = false; \
     } \
-}; \
-static inline _ExtraFieldBoolSetter _ExtraFieldBoolSetterInstance;
+    friend class rapidjson_macros_types::ConstructorRunner<_ExtraFieldBoolSetter>; \
+    static inline rapidjson_macros_types::ConstructorRunner<_ExtraFieldBoolSetter> _ExtraFieldBoolSetterInstance; \
+};
 #pragma endregion
 
 // add an action to be run during deserialization (requires an identifier unique to the class)
 // will most likely be run in the order of fields in your class definition
 #pragma region DESERIALIZE_ACTION(id, body)
 #define DESERIALIZE_ACTION(uid, ...) \
-private: \
-struct _DeserializeAction_##uid { \
+class _DeserializeAction_##uid { \
     _DeserializeAction_##uid() { \
         deserializers.emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
             __VA_ARGS__ \
         }); \
     } \
-}; \
-static inline _DeserializeAction_##uid _##uid##_DeserializeActionInstance;
+    friend class rapidjson_macros_types::ConstructorRunner<_DeserializeAction_##uid>; \
+    static inline rapidjson_macros_types::ConstructorRunner<_DeserializeAction_##uid> _##uid##_DeserializeActionInstance; \
+};
 #pragma endregion
 
 // add an action to be run during serialization (requires an identifier unique to the class)
 // will most likely be run in the order of fields in your class definition
 #pragma region SERIALIZE_ACTION(id, body)
 #define SERIALIZE_ACTION(uid, ...) \
-private: \
-struct _SerializeAction_##uid { \
+class _SerializeAction_##uid { \
     _SerializeAction_##uid() { \
         serializers.emplace_back([](SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             __VA_ARGS__ \
         }); \
     } \
-}; \
-static inline _SerializeAction_##uid _##uid##_SerializeActionInstance;
+    friend class rapidjson_macros_types::ConstructorRunner<_SerializeAction_##uid>; \
+    static inline rapidjson_macros_types::ConstructorRunner<_SerializeAction_##uid> _##uid##_SerializeActionInstance; \
+};
 #pragma endregion
 
 // define an automatically serialized / deserialized instance variable with a custom name in the json file
 #pragma region NAMED_VALUE(type, name, jsonName)
 #define NAMED_VALUE(type, name, jsonName) \
 type name; \
-private: \
-struct _JSONValueAdder_##name { \
+class _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
         serializers.emplace_back([](SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
@@ -91,16 +89,16 @@ struct _JSONValueAdder_##name { \
             rapidjson_macros_auto::Deserialize(self->name, jsonName, jsonValue); \
         }); \
     } \
-}; \
-static inline _JSONValueAdder_##name _##name##_JSONValueAdderInstance;
+    friend class rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name>; \
+    static inline rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name> _##name##_JSONValueAdderInstance; \
+};
 #pragma endregion
 
 // define an automatically serialized / deserialized std::optional instance variable with a custom name in the json file
 #pragma region NAMED_VALUE_OPTIONAL(type, name, jsonName)
 #define NAMED_VALUE_OPTIONAL(type, name, jsonName) \
 std::optional<type> name = std::nullopt; \
-private: \
-struct _JSONValueAdder_##name { \
+class _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
         serializers.emplace_back([](SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             rapidjson_macros_auto::SerializeOptional(self->name, jsonName, jsonObject, allocator); \
@@ -109,16 +107,16 @@ struct _JSONValueAdder_##name { \
             rapidjson_macros_auto::DeserializeOptional(self->name, jsonName, jsonValue); \
         }); \
     } \
-}; \
-static inline _JSONValueAdder_##name _##name##_JSONValueAdderInstance;
+    friend class rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name>; \
+    static inline rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name> _##name##_JSONValueAdderInstance; \
+};
 #pragma endregion
 
 // define an automatically serialized / deserialized instance variable with a custom name in the json file and a default value
 #pragma region NAMED_VALUE_DEFAULT(type, name, default, jsonName)
 #define NAMED_VALUE_DEFAULT(type, name, def, jsonName) \
 type name = def; \
-private: \
-struct _JSONValueAdder_##name { \
+class _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
         serializers.emplace_back([](SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
@@ -127,8 +125,9 @@ struct _JSONValueAdder_##name { \
             rapidjson_macros_auto::DeserializeDefault(self->name, jsonName, def, jsonValue); \
         }); \
     } \
-}; \
-static inline _JSONValueAdder_##name _##name##_JSONValueAdderInstance;
+    friend class rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name>; \
+    static inline rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name> _##name##_JSONValueAdderInstance; \
+};
 #pragma endregion
 
 // define an automatically serialized / deserialized std::vector with a custom name in the json file

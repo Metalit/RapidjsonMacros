@@ -41,7 +41,7 @@ namespace rapidjson_macros_types {
             document.CopyFrom(copyable.document, document.GetAllocator());
         }
         // comparison
-        bool operator==(const class CopyableValue&) const { return true; };
+        bool operator==(const CopyableValue&) const { return true; };
     };
     
     template<class T>

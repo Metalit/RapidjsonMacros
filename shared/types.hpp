@@ -43,7 +43,7 @@ namespace rapidjson_macros_types {
         // comparison
         bool operator==(const CopyableValue&) const { return true; };
     };
-    
+
     template<class T>
     struct ConstructorRunner {
         ConstructorRunner() { T(); }
@@ -72,6 +72,12 @@ namespace rapidjson_macros_types {
         case rapidjson::kStringType:
             return "string";
         case rapidjson::kNumberType:
+            if(jsonValue.IsInt()) return "int";
+            if(jsonValue.IsUint()) return "uint";
+            if(jsonValue.IsInt64()) return "int64";
+            if(jsonValue.IsUint64()) return "uint64";
+            if(jsonValue.IsFloat()) return "float";
+            if(jsonValue.IsDouble()) return "double";
             return "number";
         default:
             return "unknown";

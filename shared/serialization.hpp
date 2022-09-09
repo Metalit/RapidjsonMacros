@@ -21,7 +21,7 @@ namespace rapidjson_macros_serialization {
     inline std::optional<std::reference_wrapper<rapidjson::Value>> TryGetMember(rapidjson::Value& jsonObject, std::vector<T> const& search) {
         for(auto& name : search) {
             auto iter = jsonObject.FindMember(name);
-            if(iter == jsonObject.MemberEnd())
+            if(iter != jsonObject.MemberEnd())
                 return iter->value;
         }
         return std::nullopt;

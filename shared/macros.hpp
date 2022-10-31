@@ -4,34 +4,32 @@
 
 // declare a class with serialization and deserialization support using ReadFromFile and WriteToFile
 #pragma region DECLARE_JSON_CLASS(namespace, name, fields)
-#define DECLARE_JSON_CLASS(namespaze, name, ...) \
-namespace namespaze { \
-    class name : public JSONClass { \
-        using SelfType = name; \
-        private: \
-            static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> serializers; \
-            static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonValue)> deserializers; \
-            std::optional<rapidjson_macros_types::CopyableValue> extraFields = std::nullopt; \
-            static inline bool keepExtraFields = true; \
-        public: \
-            rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) { \
-                rapidjson::Value jsonObject(rapidjson::kObjectType); \
-                if(keepExtraFields && extraFields.has_value()) \
-                    jsonObject.CopyFrom(extraFields->document, allocator); \
-                for(auto& method : serializers) \
-                    method(this, jsonObject, allocator); \
-                return jsonObject; \
-            } \
-            void Deserialize(rapidjson::Value& jsonValue) { \
-                for(auto& method : deserializers) \
-                    method(this, jsonValue); \
-                if(keepExtraFields) \
-                    extraFields = jsonValue; \
-            } \
-            bool operator==(const class name&) const = default; \
-            __VA_ARGS__ \
-    }; \
-}
+#define DECLARE_JSON_CLASS(name, ...) \
+class name : public JSONClass { \
+    using SelfType = name; \
+    private: \
+        static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> serializers; \
+        static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonValue)> deserializers; \
+        std::optional<rapidjson_macros_types::CopyableValue> extraFields = std::nullopt; \
+        static inline bool keepExtraFields = true; \
+    public: \
+        rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) { \
+            rapidjson::Value jsonObject(rapidjson::kObjectType); \
+            if(keepExtraFields && extraFields.has_value()) \
+                jsonObject.CopyFrom(extraFields->document, allocator); \
+            for(auto& method : serializers) \
+                method(this, jsonObject, allocator); \
+            return jsonObject; \
+        } \
+        void Deserialize(rapidjson::Value& jsonValue) { \
+            for(auto& method : deserializers) \
+                method(this, jsonValue); \
+            if(keepExtraFields) \
+                extraFields = jsonValue; \
+        } \
+        bool operator==(const class name&) const = default; \
+        __VA_ARGS__ \
+};
 #pragma endregion
 
 // prevents the class from preserving json data not specified in class fields and serialization

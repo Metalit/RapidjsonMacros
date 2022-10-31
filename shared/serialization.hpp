@@ -123,7 +123,7 @@ if(valueOpt.has_value() && valueOpt.value().get().IsObject()) { \
 auto valueOpt = rapidjson_macros_serialization::TryGetMember(jsonValue, jsonName); \
 if(valueOpt.has_value() && valueOpt.value().get().IsObject()) { \
     rapidjson::Value& value = valueOpt.value(); \
-    name->Deserialize(value); \
+    name.Deserialize(value); \
     rapidjson_macros_serialization::TryRemoveMember(jsonValue, jsonName); \
 } else name = def; }
 

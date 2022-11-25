@@ -2,18 +2,18 @@
 
 #include "../shared/auto.hpp"
 
-// declare a class with serialization and deserialization support using ReadFromFile and WriteToFile
-#pragma region DECLARE_JSON_CLASS(namespace, name, fields)
+// declare a class with serialization and deserialization support using the Read and Write functions
+#pragma region DECLARE_JSON_CLASS(name, fields)
 #define DECLARE_JSON_CLASS(name, ...) \
 class name : public JSONClass { \
     using SelfType = name; \
     private: \
-        static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> serializers; \
+        static inline std::vector<void(*)(const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> serializers; \
         static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonValue)> deserializers; \
         std::optional<rapidjson_macros_types::CopyableValue> extraFields = std::nullopt; \
         static inline bool keepExtraFields = true; \
     public: \
-        rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) { \
+        rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const { \
             rapidjson::Value jsonObject(rapidjson::kObjectType); \
             if(keepExtraFields && extraFields.has_value()) \
                 jsonObject.CopyFrom(extraFields->document, allocator); \
@@ -65,7 +65,7 @@ class _DeserializeAction_##uid { \
 #define SERIALIZE_ACTION(uid, ...) \
 class _SerializeAction_##uid { \
     _SerializeAction_##uid() { \
-        serializers.emplace_back([](SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serializers.emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             __VA_ARGS__ \
         }); \
     } \
@@ -80,7 +80,7 @@ class _SerializeAction_##uid { \
 type name; \
 class _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
-        serializers.emplace_back([](SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serializers.emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
         }); \
         deserializers.emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
@@ -98,7 +98,7 @@ class _JSONValueAdder_##name { \
 std::optional<type> name = std::nullopt; \
 class _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
-        serializers.emplace_back([](SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serializers.emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             rapidjson_macros_auto::SerializeOptional(self->name, jsonName, jsonObject, allocator); \
         }); \
         deserializers.emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
@@ -116,7 +116,7 @@ class _JSONValueAdder_##name { \
 type name = def; \
 class _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
-        serializers.emplace_back([](SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serializers.emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
         }); \
         deserializers.emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \

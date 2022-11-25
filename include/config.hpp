@@ -9,6 +9,7 @@ Logger& getLogger();
 namespace RapidjsonMacros {
     DECLARE_JSON_CLASS(SmallSubclass,
         VALUE_DEFAULT(double, DoubleValue, 1.0 / 2.5)
+        VALUE(std::vector<std::string>, StringVector)
     )
 
     DECLARE_JSON_CLASS(Subclass,

@@ -12,10 +12,10 @@ __VA_ARGS__ void DeserializeOptional(std::optional<type>& var, S const& jsonName
 __VA_ARGS__ void DeserializeDefault(type& var, S const& jsonName, const type& defaultValue, rapidjson::Value& jsonValue) { \
     DESERIALIZE_##macro##_DEFAULT(var, jsonName, defaultValue); \
 } \
-__VA_ARGS__ void Serialize(type& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+__VA_ARGS__ void Serialize(const type& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
     SERIALIZE_##macro(var, jsonName); \
 } \
-__VA_ARGS__ void SerializeOptional(std::optional<type>& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+__VA_ARGS__ void SerializeOptional(const std::optional<type>& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
     SERIALIZE_##macro##_OPTIONAL(var, jsonName); \
 }
 
@@ -33,9 +33,9 @@ namespace rapidjson_macros_auto {
     void DeserializeDefault(T& var, S const& jsonName, const T& defaultValue, rapidjson::Value& jsonValue);
     
     template<class T, class S>
-    void Serialize(T& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);
+    void Serialize(const T& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);
     template<class T, class S>
-    void SerializeOptional(std::optional<T>& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);
+    void SerializeOptional(const std::optional<T>& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);
 
     SPECIALIZATION(
         T,

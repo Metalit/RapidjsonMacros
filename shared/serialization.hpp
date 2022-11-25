@@ -206,11 +206,11 @@ if(valueOpt.has_value() && valueOpt.value().get().IsArray()) { \
 
 #define SERIALIZE_VALUE(name, jsonName) \
 auto name##_jsonName = rapidjson_macros_types::GetJSONString(rapidjson_macros_serialization::GetDefaultName(jsonName), allocator); \
-jsonObject.AddMember(name##_jsonName, name, allocator);
+jsonObject.AddMember(name##_jsonName, rapidjson_macros_types::CreateJSONValue(name, allocator), allocator);
 
 #define SERIALIZE_VALUE_OPTIONAL(name, jsonName) \
 auto name##_jsonName = rapidjson_macros_types::GetJSONString(rapidjson_macros_serialization::GetDefaultName(jsonName), allocator); \
-if(name) jsonObject.AddMember(name##_jsonName, name.value(), allocator);
+if(name) jsonObject.AddMember(name##_jsonName, rapidjson_macros_types::CreateJSONValue(name.value(), allocator), allocator);
 
 #define SERIALIZE_CLASS(name, jsonName) \
 auto name##_jsonName = rapidjson_macros_types::GetJSONString(rapidjson_macros_serialization::GetDefaultName(jsonName), allocator); \
@@ -258,13 +258,16 @@ if(name) { \
 }
 
 template<JSONClassDerived T>
-static void ReadFromFile(std::string_view path, T& toDeserialize) {
+static inline void ReadFromFile(std::string_view path, T& toDeserialize) {
     if(!fileexists(path))
         throw JSONException("file not found");
-    auto json = readfile(path);
+    return ReadFromString(readfile(path), toDeserialize);
+}
 
+template<JSONClassDerived T>
+static void ReadFromString(std::string_view string, T& toDeserialize) {
     rapidjson::Document document;
-    document.Parse(json);
+    document.Parse(string.data());
     if(document.HasParseError() || !document.IsObject())
         throw JSONException("file could not be parsed as json");
     
@@ -272,7 +275,12 @@ static void ReadFromFile(std::string_view path, T& toDeserialize) {
 }
 
 template<JSONClassDerived T>
-static bool WriteToFile(std::string_view path, T& toSerialize) {
+static inline bool WriteToFile(std::string_view path, const T& toSerialize) {
+    return writefile(path, WriteToString(toSerialize));
+}
+
+template<JSONClassDerived T>
+static std::string WriteToString(const T& toSerialize) {
     rapidjson::Document document;
     document.SetObject();
     toSerialize.Serialize(document.GetAllocator()).Swap(document);
@@ -280,7 +288,5 @@ static bool WriteToFile(std::string_view path, T& toSerialize) {
     rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     document.Accept(writer);
-    std::string s = buffer.GetString();
-
-    return writefile(path, s);
+    return buffer.GetString();
 }

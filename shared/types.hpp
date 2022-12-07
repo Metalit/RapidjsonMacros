@@ -48,7 +48,7 @@ namespace rapidjson_macros_types {
     struct ConstructorRunner {
         ConstructorRunner() { T(); }
     };
-    
+
     template<class T>
     inline std::string CppTypeName(T& var) {
         char* realname = abi::__cxa_demangle(typeid(var).name(), 0, 0, 0);
@@ -105,11 +105,7 @@ namespace rapidjson_macros_types {
     inline rapidjson::Value CreateJSONValue(const std::string& value, rapidjson::Document::AllocatorType& allocator) {
         return rapidjson::Value(value, allocator);
     }
-    template<>
-    inline rapidjson::Value CreateJSONValue(std::string& value, rapidjson::Document::AllocatorType& allocator) {
-        return rapidjson::Value(value, allocator);
-    }
-    
+
     template<class T>
     inline T GetValueType(rapidjson::Value& jsonValue, const T& _) {
         return jsonValue.Get<T>();

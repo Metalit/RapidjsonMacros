@@ -73,14 +73,17 @@ namespace rapidjson_macros_serialization {
     }
 }
 
+#define RAPIDJSON_MACROS_NOT_FOUND_EXCPETION_STRING(jsonName) \
+"value with name '" + rapidjson_macros_serialization::GetNameString(jsonName) + "' was not found"
+
 #define RAPIDJSON_MACROS_TYPE_EXCEPTION_STRING(varName, jsonName) \
-rapidjson_macros_serialization::GetNameString(jsonName) + " was an unexpected type (" \
-+ rapidjson_macros_types::JsonTypeName(value) + "), type expected was: " \
-+ rapidjson_macros_types::CppTypeName(varName)
+"value with name '" + rapidjson_macros_serialization::GetNameString(jsonName) + \
+"' was an unexpected type (" + rapidjson_macros_types::JsonTypeName(value) + \
+"), type expected was: " + rapidjson_macros_types::CppTypeName(varName)
 
 #define DESERIALIZE_VALUE(name, jsonName) { \
 auto valueOpt = rapidjson_macros_serialization::TryGetMember(jsonValue, jsonName); \
-if (!valueOpt.has_value()) throw JSONException(rapidjson_macros_serialization::GetNameString(jsonName) + " not found"); \
+if (!valueOpt.has_value()) throw JSONException(RAPIDJSON_MACROS_NOT_FOUND_EXCPETION_STRING(jsonName)); \
 rapidjson::Value& value = valueOpt.value(); \
 if (!rapidjson_macros_types::GetIsType(value, name)) throw JSONException(RAPIDJSON_MACROS_TYPE_EXCEPTION_STRING(name, jsonName)); \
 name = rapidjson_macros_types::GetValueType(value, name); \
@@ -104,7 +107,7 @@ if(valueOpt.has_value() && rapidjson_macros_types::GetIsType(valueOpt.value(), n
 
 #define DESERIALIZE_CLASS(name, jsonName) { \
 auto valueOpt = rapidjson_macros_serialization::TryGetMember(jsonValue, jsonName); \
-if (!valueOpt.has_value()) throw JSONException(rapidjson_macros_serialization::GetNameString(jsonName) + " not found"); \
+if (!valueOpt.has_value()) throw JSONException(RAPIDJSON_MACROS_NOT_FOUND_EXCPETION_STRING(jsonName)); \
 rapidjson::Value& value = valueOpt.value(); \
 if (!value.IsObject()) throw JSONException(RAPIDJSON_MACROS_TYPE_EXCEPTION_STRING(name, jsonName)); \
 name.Deserialize(value); \
@@ -130,7 +133,7 @@ if(valueOpt.has_value() && valueOpt.value().get().IsObject()) { \
 // seems to assume vector is of another json class
 #define DESERIALIZE_VECTOR(name, jsonName) { \
 auto valueOpt = rapidjson_macros_serialization::TryGetMember(jsonValue, jsonName); \
-if (!valueOpt.has_value()) throw JSONException(rapidjson_macros_serialization::GetNameString(jsonName) + " not found"); \
+if (!valueOpt.has_value()) throw JSONException(RAPIDJSON_MACROS_NOT_FOUND_EXCPETION_STRING(jsonName)); \
 name.clear(); \
 rapidjson::Value& value = valueOpt.value(); \
 if(value.IsArray()) { \
@@ -171,7 +174,7 @@ if(valueOpt.has_value() && valueOpt.value().get().IsArray()) { \
 
 #define DESERIALIZE_VECTOR_BASIC(name, jsonName) { \
 auto valueOpt = rapidjson_macros_serialization::TryGetMember(jsonValue, jsonName); \
-if (!valueOpt.has_value()) throw JSONException(rapidjson_macros_serialization::GetNameString(jsonName) + " not found"); \
+if (!valueOpt.has_value()) throw JSONException(RAPIDJSON_MACROS_NOT_FOUND_EXCPETION_STRING(jsonName)); \
 name.clear(); \
 rapidjson::Value& value = valueOpt.value(); \
 if(value.IsArray()) { \
@@ -269,8 +272,8 @@ static void ReadFromString(std::string_view string, T& toDeserialize) {
     rapidjson::Document document;
     document.Parse(string.data());
     if(document.HasParseError() || !document.IsObject())
-        throw JSONException("file could not be parsed as json");
-    
+        throw JSONException("string could not be parsed as json");
+
     toDeserialize.Deserialize(document.GetObject());
 }
 

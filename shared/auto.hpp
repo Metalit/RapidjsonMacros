@@ -31,7 +31,7 @@ namespace rapidjson_macros_auto {
     void DeserializeOptional(std::optional<T>& var, S const& jsonName, rapidjson::Value& jsonValue);
     template<class T, class S>
     void DeserializeDefault(T& var, S const& jsonName, const T& defaultValue, rapidjson::Value& jsonValue);
-    
+
     template<class T, class S>
     void Serialize(const T& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);
     template<class T, class S>
@@ -42,13 +42,13 @@ namespace rapidjson_macros_auto {
         CLASS,
         template<JSONClassDerived T, class S>
     )
-    
+
     SPECIALIZATION(
         std::vector<T>,
         VECTOR,
         template<JSONClassDerived T, class S>
     )
-    
+
     BASIC_SPECIALIZATION(bool)
     BASIC_SPECIALIZATION(int)
     BASIC_SPECIALIZATION(unsigned)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../shared/options.hpp"
 #include "../shared/auto.hpp"
 
 // declare a class with serialization and deserialization support using the Read and Write functions
@@ -28,6 +29,7 @@ class name : public JSONClass { \
                 extraFields = jsonValue; \
         } \
         bool operator==(const class name&) const = default; \
+        name() = default; \
         __VA_ARGS__ \
 };
 #pragma endregion
@@ -157,3 +159,16 @@ class _JSONValueAdder_##name { \
 
 // multiple candidate names can be used for deserialization, and the first name will be used for serialization
 #define NAME_OPTS(...) std::vector({__VA_ARGS__})
+
+// declare a class that can accept multiple non-class types, priority determined by order
+#pragma region TYPE_OPTS_CLASS(name, types)
+#define TYPE_OPTS_CLASS(name, ...) RAPIDJSON_MACROS_GET_TOC_MACRO(name, __VA_ARGS__, \
+RAPIDJSON_MACROS_TOC_8, \
+RAPIDJSON_MACROS_TOC_7, \
+RAPIDJSON_MACROS_TOC_6, \
+RAPIDJSON_MACROS_TOC_5, \
+RAPIDJSON_MACROS_TOC_4, \
+RAPIDJSON_MACROS_TOC_3, \
+RAPIDJSON_MACROS_TOC_2 \
+)(name, __VA_ARGS__)
+#pragma endregion

@@ -21,6 +21,9 @@ namespace RapidjsonMacros {
         NAMED_VALUE(bool, BoolValue, NAME_OPTS("BoolValueName1", "BoolValueName2", "BoolValueName3"))
         NAMED_VALUE(int, IntValue, "CustomNamedIntValue")
         VALUE_DEFAULT(float, FloatValue, 0)
+        using string = std::string;
+        TYPE_OPTS_CLASS(StringOrBoolOrDouble, string, bool, double)
+        VALUE_DEFAULT(StringOrBoolOrDouble, SBDValue, StringOrBoolOrDouble("Default string"))
         private:
         VALUE_OPTIONAL(std::string, StringValue)
         SERIALIZE_ACTION(0,
@@ -34,6 +37,8 @@ namespace RapidjsonMacros {
         DISCARD_EXTRA_FIELDS
     )
 
+    TYPE_OPTS_CLASS(IntOrFloat, int, float)
+
     DECLARE_JSON_CLASS(TestClass,
         VALUE(bool, BoolValue)
         VECTOR_DEFAULT(int, IntVector, std::vector<int>({0, 1, 2, 3}))
@@ -41,5 +46,6 @@ namespace RapidjsonMacros {
         VALUE(Subclass, Subclass)
         VECTOR(SmallSubclass, SubclassVector)
         MAP(std::string, Map)
+        NAMED_VALUE(IntOrFloat, FlexibleValue, "Give me an int or a float!")
     )
 }

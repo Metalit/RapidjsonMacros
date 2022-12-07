@@ -23,11 +23,8 @@ extern "C" void setup(ModInfo& info) {
     modInfo = info;
 
     if(!fileexists(GetConfigPath())) {
-        try {
-            WriteToFile(GetConfigPath(), testClass);
-        } catch(const std::exception& e) {
-            getLogger().error("error writing: %s", e.what());
-        }
+        if(!WriteToFile(GetConfigPath(), testClass))
+            getLogger().error("error writing to config");
     }
 
     try {
@@ -43,6 +40,6 @@ extern "C" void setup(ModInfo& info) {
     } catch(const std::exception& e) {
         getLogger().error("error writing test class: %s", e.what());
     }
-	
+
     getLogger().info("Completed setup!");
 }

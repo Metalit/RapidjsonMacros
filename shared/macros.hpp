@@ -130,12 +130,17 @@ class _JSONValueAdder_##name { \
 
 // define an automatically serialized / deserialized std::vector with a custom name in the json file
 #define NAMED_VECTOR(type, name, jsonName) NAMED_VALUE(std::vector<type>, name, jsonName)
-
 // define an automatically serialized / deserialized std::optional<std::vector> with a custom name in the json file
 #define NAMED_VECTOR_OPTIONAL(type, name, jsonName) NAMED_VALUE_OPTIONAL(std::vector<type>, name, jsonName)
-
 // define an automatically serialized / deserialized std::vector with a custom name in the json file and a default value
 #define NAMED_VECTOR_DEFAULT(type, name, def, jsonName) NAMED_VALUE_DEFAULT(std::vector<type>, name, def, jsonName)
+
+// define an automatically serialized / deserialized string keyed std::map with a custom name in the json file
+#define NAMED_MAP(type, name, jsonName) NAMED_VALUE(StringKeyedMap<type>, name, jsonName)
+// define an automatically serialized / deserialized string keyed std::optional<std::map> with a custom name in the json file
+#define NAMED_MAP_OPTIONAL(type, name, jsonName) NAMED_VALUE_OPTIONAL(StringKeyedMap<type>, name, jsonName)
+// define an automatically serialized / deserialized string keyed std::map with a custom name in the json file and a default value
+#define NAMED_MAP_DEFAULT(type, name, def, jsonName) NAMED_VALUE_DEFAULT(StringKeyedMap<type>, name, def, jsonName)
 
 // versions of the macros above that use the name of the instance variable as the name in the json file
 #define VALUE(type, name) NAMED_VALUE(type, name, #name)
@@ -145,6 +150,10 @@ class _JSONValueAdder_##name { \
 #define VECTOR(type, name) NAMED_VECTOR(type, name, #name)
 #define VECTOR_OPTIONAL(type, name) NAMED_VECTOR_OPTIONAL(type, name, #name)
 #define VECTOR_DEFAULT(type, name, def) NAMED_VECTOR_DEFAULT(type, name, def, #name)
+
+#define MAP(type, name) NAMED_MAP(type, name, #name)
+#define MAP_OPTIONAL(type, name) NAMED_MAP_OPTIONAL(type, name, #name)
+#define MAP_DEFAULT(type, name, def) NAMED_MAP_DEFAULT(type, name, def, #name)
 
 // multiple candidate names can be used for deserialization, and the first name will be used for serialization
 #define NAME_OPTS(...) std::vector({__VA_ARGS__})

@@ -2,6 +2,8 @@
 
 #include "beatsaber-hook/shared/config/rapidjson-utils.hpp"
 
+#include <map>
+
 class JSONException : public std::exception {
     private:
         std::string message;
@@ -21,6 +23,9 @@ class JSONClass {
 
 template<class T>
 concept JSONClassDerived = std::is_base_of_v<JSONClass, T>;
+
+template<class T>
+using StringKeyedMap = std::map<std::string, T>;
 
 namespace rapidjson_macros_types {
 
@@ -143,6 +148,26 @@ namespace rapidjson_macros_types {
 
     template<class T>
     inline T NewVectorTypeOptional(const std::optional<std::vector<T>>& _) {
+        return T();
+    }
+
+    template<class T>
+    inline T GetValueTypeMap(rapidjson::Value& jsonValue, const std::map<std::string, T>& _) {
+        return jsonValue.Get<T>();
+    }
+
+    template<class T>
+    inline T GetValueTypeMapOptional(rapidjson::Value& jsonValue, const std::optional<std::map<std::string, T>>& _) {
+        return jsonValue.Get<T>();
+    }
+
+    template<class T>
+    inline T NewMapType(const std::map<std::string, T>& _) {
+        return T();
+    }
+
+    template<class T>
+    inline T NewMapTypeOptional(const std::optional<std::map<std::string, T>>& _) {
         return T();
     }
 }

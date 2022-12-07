@@ -21,7 +21,8 @@ __VA_ARGS__ void SerializeOptional(const std::optional<type>& var, S const& json
 
 #define BASIC_SPECIALIZATION(type) \
 SPECIALIZATION(type, VALUE, template<class S>) \
-SPECIALIZATION(std::vector<type>, VECTOR_BASIC, template<class S>)
+SPECIALIZATION(std::vector<type>, VECTOR_BASIC, template<class S>) \
+SPECIALIZATION(StringKeyedMap<type>, MAP_BASIC, template<class S>)
 
 namespace rapidjson_macros_auto {
 
@@ -46,6 +47,12 @@ namespace rapidjson_macros_auto {
     SPECIALIZATION(
         std::vector<T>,
         VECTOR,
+        template<JSONClassDerived T, class S>
+    )
+
+    SPECIALIZATION(
+        StringKeyedMap<T>,
+        MAP,
         template<JSONClassDerived T, class S>
     )
 

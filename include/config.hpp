@@ -10,6 +10,11 @@ namespace RapidjsonMacros {
     DECLARE_JSON_CLASS(SmallSubclass,
         VALUE_DEFAULT(double, DoubleValue, 1.0 / 2.5)
         VALUE(std::vector<std::string>, StringVector)
+        MAP_DEFAULT(int, IntMap, StringKeyedMap<int>({
+            {"one", 1},
+            {"two", 2},
+            {"three", 3}
+        }))
     )
 
     DECLARE_JSON_CLASS(Subclass,
@@ -35,7 +40,6 @@ namespace RapidjsonMacros {
         VALUE_OPTIONAL(std::vector<float>, FloatVector)
         VALUE(Subclass, Subclass)
         VECTOR(SmallSubclass, SubclassVector)
+        MAP(std::string, Map)
     )
 }
-
-extern RapidjsonMacros::TestClass testClass;

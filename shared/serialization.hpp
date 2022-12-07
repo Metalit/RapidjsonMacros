@@ -207,6 +207,82 @@ if(valueOpt.has_value() && valueOpt.value().get().IsArray()) { \
     rapidjson_macros_serialization::TryRemoveMember(jsonValue, jsonName); \
 } else name = def; }
 
+#define DESERIALIZE_MAP(varName, jsonName) { \
+auto valueOpt = rapidjson_macros_serialization::TryGetMember(jsonValue, jsonName); \
+if (!valueOpt.has_value()) throw JSONException(RAPIDJSON_MACROS_NOT_FOUND_EXCPETION_STRING(jsonName)); \
+varName.clear(); \
+rapidjson::Value& value = valueOpt.value(); \
+if(value.IsObject()) { \
+    for (auto& member : value.GetObject()) { \
+        auto value = rapidjson_macros_types::NewMapType(varName); \
+        value.Deserialize(member.value); \
+        varName.insert({member.name.GetString(), value}); \
+    } \
+    rapidjson_macros_serialization::TryRemoveMember(jsonValue, jsonName); \
+} else throw JSONException(RAPIDJSON_MACROS_TYPE_EXCEPTION_STRING(varName, jsonName)); }
+
+#define DESERIALIZE_MAP_OPTIONAL(varName, jsonName) { \
+auto valueOpt = rapidjson_macros_serialization::TryGetMember(jsonValue, jsonName); \
+if(valueOpt.has_value() && valueOpt.value().get().IsObject()) { \
+    if(!varName.has_value()) varName.emplace(); \
+    else varName->clear(); \
+    rapidjson::Value& value = valueOpt.value(); \
+    for (auto& member : value.GetObject()) { \
+        auto value = rapidjson_macros_types::NewMapTypeOptional(varName); \
+        value.Deserialize(member.value); \
+        varName->insert({member.name.GetString(), value}); \
+    } \
+    rapidjson_macros_serialization::TryRemoveMember(jsonValue, jsonName); \
+} else varName = std::nullopt; }
+
+#define DESERIALIZE_MAP_DEFAULT(varName, jsonName, def) { \
+auto valueOpt = rapidjson_macros_serialization::TryGetMember(jsonValue, jsonName); \
+if(valueOpt.has_value() && valueOpt.value().get().IsObject()) { \
+    varName.clear(); \
+    rapidjson::Value& value = valueOpt.value(); \
+    for (auto& member : value.GetObject()) { \
+        auto value = rapidjson_macros_types::NewMapType(varName); \
+        value.Deserialize(member.value); \
+        varName.insert({member.name.GetString(), value}); \
+    } \
+    rapidjson_macros_serialization::TryRemoveMember(jsonValue, jsonName); \
+} else varName = def; }
+
+#define DESERIALIZE_MAP_BASIC(varName, jsonName) { \
+auto valueOpt = rapidjson_macros_serialization::TryGetMember(jsonValue, jsonName); \
+if (!valueOpt.has_value()) throw JSONException(RAPIDJSON_MACROS_NOT_FOUND_EXCPETION_STRING(jsonName)); \
+varName.clear(); \
+rapidjson::Value& value = valueOpt.value(); \
+if(value.IsObject()) { \
+    for (auto& member : value.GetObject()) { \
+        varName.insert({member.name.GetString(), rapidjson_macros_types::GetValueTypeMap(member.value, varName)}); \
+    } \
+    rapidjson_macros_serialization::TryRemoveMember(jsonValue, jsonName); \
+} else throw JSONException(RAPIDJSON_MACROS_TYPE_EXCEPTION_STRING(varName, jsonName)); }
+
+#define DESERIALIZE_MAP_BASIC_OPTIONAL(varName, jsonName) { \
+auto valueOpt = rapidjson_macros_serialization::TryGetMember(jsonValue, jsonName); \
+if(valueOpt.has_value() && valueOpt.value().get().IsObject()) { \
+    if(!varName.has_value()) varName.emplace(); \
+    else varName->clear(); \
+    rapidjson::Value& value = valueOpt.value(); \
+    for (auto& member : value.GetObject()) { \
+        varName->insert({member.name.GetString(), rapidjson_macros_types::GetValueTypeMapOptional(member.value, varName)}); \
+    } \
+    rapidjson_macros_serialization::TryRemoveMember(jsonValue, jsonName); \
+} else varName = std::nullopt; }
+
+#define DESERIALIZE_MAP_BASIC_DEFAULT(varName, jsonName, def) { \
+auto valueOpt = rapidjson_macros_serialization::TryGetMember(jsonValue, jsonName); \
+if(valueOpt.has_value() && valueOpt.value().get().IsObject()) { \
+    varName.clear(); \
+    rapidjson::Value& value = valueOpt.value(); \
+    for (auto& member : value.GetObject()) { \
+        varName.insert({member.name.GetString(), rapidjson_macros_types::GetValueTypeMap(member.value, varName)}); \
+    } \
+    rapidjson_macros_serialization::TryRemoveMember(jsonValue, jsonName); \
+} else varName = def; }
+
 #define SERIALIZE_VALUE(name, jsonName) \
 auto name##_jsonName = rapidjson_macros_types::GetJSONString(rapidjson_macros_serialization::GetDefaultName(jsonName), allocator); \
 jsonObject.AddMember(name##_jsonName, rapidjson_macros_types::CreateJSONValue(name, allocator), allocator);
@@ -226,7 +302,7 @@ if(name) jsonObject.AddMember(name##_jsonName, name->Serialize(allocator), alloc
 // assumes vector is of json serializables
 #define SERIALIZE_VECTOR(name, jsonName) \
 rapidjson::Value name##_value(rapidjson::kArrayType); \
-for(auto& jsonClass : name) { \
+for(const auto& jsonClass : name) { \
     name##_value.GetArray().PushBack(jsonClass.Serialize(allocator), allocator); \
 } \
 auto name##_jsonName = rapidjson_macros_types::GetJSONString(rapidjson_macros_serialization::GetDefaultName(jsonName), allocator); \
@@ -235,7 +311,7 @@ jsonObject.AddMember(name##_jsonName, name##_value, allocator);
 #define SERIALIZE_VECTOR_OPTIONAL(name, jsonName) \
 if(name) { \
     rapidjson::Value name##_value(rapidjson::kArrayType); \
-    for(auto& jsonClass : name.value()) { \
+    for(const auto& jsonClass : name.value()) { \
         name##_value.GetArray().PushBack(jsonClass.Serialize(allocator), allocator); \
     } \
     auto name##_jsonName = rapidjson_macros_types::GetJSONString(rapidjson_macros_serialization::GetDefaultName(jsonName), allocator); \
@@ -255,6 +331,46 @@ if(name) { \
     rapidjson::Value name##_value(rapidjson::kArrayType); \
     for(const auto& member : name.value()) { \
         name##_value.GetArray().PushBack(rapidjson_macros_types::CreateJSONValue(member, allocator), allocator); \
+    } \
+    auto name##_jsonName = rapidjson_macros_types::GetJSONString(rapidjson_macros_serialization::GetDefaultName(jsonName), allocator); \
+    jsonObject.AddMember(name##_jsonName, name##_value, allocator); \
+}
+
+#define SERIALIZE_MAP(name, jsonName) \
+rapidjson::Value name##_value(rapidjson::kObjectType); \
+for(const auto& member : name) { \
+    auto name##_value_jsonName = rapidjson_macros_types::GetJSONString(member.first, allocator); \
+    name##_value.AddMember(name##_value_jsonName, member.second.Serialize(allocator), allocator); \
+} \
+auto name##_jsonName = rapidjson_macros_types::GetJSONString(rapidjson_macros_serialization::GetDefaultName(jsonName), allocator); \
+jsonObject.AddMember(name##_jsonName, name##_value, allocator);
+
+#define SERIALIZE_MAP_OPTIONAL(name, jsonName) \
+if(name) { \
+    rapidjson::Value name##_value(rapidjson::kObjectType); \
+    for(const auto& member : name.value()) { \
+        auto name##_value_jsonName = rapidjson_macros_types::GetJSONString(member.first, allocator); \
+        name##_value.AddMember(name##_value_jsonName, member.second.Serialize(allocator), allocator); \
+    } \
+    auto name##_jsonName = rapidjson_macros_types::GetJSONString(rapidjson_macros_serialization::GetDefaultName(jsonName), allocator); \
+    jsonObject.AddMember(name##_jsonName, name##_value, allocator);\
+}
+
+#define SERIALIZE_MAP_BASIC(name, jsonName) \
+rapidjson::Value name##_value(rapidjson::kObjectType); \
+for(const auto& member : name) { \
+    auto name##_value_jsonName = rapidjson_macros_types::GetJSONString(member.first, allocator); \
+    name##_value.AddMember(name##_value_jsonName, rapidjson_macros_types::CreateJSONValue(member.second, allocator), allocator); \
+} \
+auto name##_jsonName = rapidjson_macros_types::GetJSONString(rapidjson_macros_serialization::GetDefaultName(jsonName), allocator); \
+jsonObject.AddMember(name##_jsonName, name##_value, allocator);
+
+#define SERIALIZE_MAP_BASIC_OPTIONAL(name, jsonName) \
+if(name) { \
+    rapidjson::Value name##_value(rapidjson::kObjectType); \
+    for(const auto& member : name.value()) { \
+        auto name##_value_jsonName = rapidjson_macros_types::GetJSONString(member.first, allocator); \
+        name##_value.AddMember(name##_value_jsonName, rapidjson_macros_types::CreateJSONValue(member.second, allocator), allocator); \
     } \
     auto name##_jsonName = rapidjson_macros_types::GetJSONString(rapidjson_macros_serialization::GetDefaultName(jsonName), allocator); \
     jsonObject.AddMember(name##_jsonName, name##_value, allocator); \

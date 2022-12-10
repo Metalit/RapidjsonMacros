@@ -9,7 +9,7 @@ __VA_ARGS__ void Deserialize(type& var, S const& jsonName, rapidjson::Value& jso
 __VA_ARGS__ void DeserializeOptional(std::optional<type>& var, S const& jsonName, rapidjson::Value& jsonValue) { \
     DESERIALIZE_##macro##_OPTIONAL(var, jsonName); \
 } \
-__VA_ARGS__ void DeserializeDefault(type& var, S const& jsonName, const type& defaultValue, rapidjson::Value& jsonValue) { \
+__VA_ARGS__ void DeserializeDefault(type& var, S const& jsonName, const rapidjson_macros_types::with_constructible<type> auto& defaultValue, rapidjson::Value& jsonValue) { \
     DESERIALIZE_##macro##_DEFAULT(var, jsonName, defaultValue); \
 } \
 __VA_ARGS__ void Serialize(const type& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
@@ -31,7 +31,7 @@ namespace rapidjson_macros_auto {
     template<class T, class S>
     void DeserializeOptional(std::optional<T>& var, S const& jsonName, rapidjson::Value& jsonValue);
     template<class T, class S>
-    void DeserializeDefault(T& var, S const& jsonName, const T& defaultValue, rapidjson::Value& jsonValue);
+    void DeserializeDefault(T& var, S const& jsonName, const rapidjson_macros_types::with_constructible<T> auto& defaultValue, rapidjson::Value& jsonValue);
 
     template<class T, class S>
     void Serialize(const T& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);

@@ -29,6 +29,9 @@ using StringKeyedMap = std::map<std::string, T>;
 
 namespace rapidjson_macros_types {
 
+    template < class From, class T >
+    concept with_constructible = std::is_constructible_v<T, From>;
+
     class CopyableValue {
         public:
         rapidjson::Document document;
@@ -55,7 +58,7 @@ namespace rapidjson_macros_types {
     };
 
     template<class T>
-    inline std::string CppTypeName(T& var) {
+    inline std::string CppTypeName(const T& var) {
         char* realname = abi::__cxa_demangle(typeid(var).name(), 0, 0, 0);
         std::string s(realname);
         free(realname);

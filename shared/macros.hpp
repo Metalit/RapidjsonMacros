@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../shared/options.hpp"
 #include "../shared/auto.hpp"
 
 // declare a class with serialization and deserialization support using the Read and Write functions
@@ -161,14 +160,66 @@ class _JSONValueAdder_##name { \
 #define NAME_OPTS(...) std::vector({__VA_ARGS__})
 
 // declare a class that can accept multiple non-class types, priority determined by order
-#pragma region TYPE_OPTS_CLASS(name, types)
-#define TYPE_OPTS_CLASS(name, ...) RAPIDJSON_MACROS_GET_TOC_MACRO(name, __VA_ARGS__, \
-RAPIDJSON_MACROS_TOC_8, \
-RAPIDJSON_MACROS_TOC_7, \
-RAPIDJSON_MACROS_TOC_6, \
-RAPIDJSON_MACROS_TOC_5, \
-RAPIDJSON_MACROS_TOC_4, \
-RAPIDJSON_MACROS_TOC_3, \
-RAPIDJSON_MACROS_TOC_2 \
-)(name, __VA_ARGS__)
+#pragma region TypeOptions<types...>
+template<typename... Ts>
+class TypeOptions : public JSONClass {
+    private:
+        rapidjson::Document storedValue;
+        template<typename C, typename... Cs>
+        static bool CheckValueWithTypes(const rapidjson::Value& jsonValue) {
+            if constexpr(sizeof...(Cs) > 0)
+                return jsonValue.Is<C>() || CheckValueWithTypes<Cs...>(jsonValue);
+            return jsonValue.Is<C>();
+        }
+    public:
+        void Deserialize(rapidjson::Value& jsonValue) {
+            if(!CheckValueWithTypes<Ts...>(jsonValue)) {
+                throw JSONException("value was an unexpected type (" +
+                rapidjson_macros_types::JsonTypeName(jsonValue) + "), type expected was: " +
+                rapidjson_macros_types::CppTypeName(TypeOptions<Ts...>()));
+            } else
+                storedValue.Swap(jsonValue);
+        }
+        rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const {
+            rapidjson::Value ret;
+            ret.CopyFrom(storedValue, allocator);
+            return ret;
+        }
+
+        template<typename T>
+        requires (std::is_convertible_v<Ts, T> || ...)
+        std::optional<T> GetValue() {
+            if(storedValue.Is<T>())
+                return storedValue.Get<T>();
+            return std::nullopt;
+        }
+        template<typename T>
+        requires (std::is_convertible_v<T, Ts> || ...)
+        void SetValue(T&& value) {
+            using TypeHelper = rapidjson::internal::TypeHelper<rapidjson::Value, std::decay_t<T>>;
+            TypeHelper::Set(storedValue, value, storedValue.GetAllocator());
+        }
+        void SetValue(const TypeOptions<Ts...>& value) {
+            storedValue.CopyFrom(value.storedValue, storedValue.GetAllocator());
+        }
+        template<typename T>
+        requires (std::is_convertible_v<T, Ts> || ...)
+        TypeOptions<Ts...>& operator=(T&& other) {
+            SetValue(other);
+            return *this;
+        }
+        TypeOptions<Ts...>& operator=(const TypeOptions<Ts...>& other) {
+            SetValue(other);
+            return *this;
+        }
+        TypeOptions() = default;
+        template<typename T>
+        requires (std::is_convertible_v<T, Ts> || ...)
+        TypeOptions(T value) {
+            SetValue(value);
+        }
+        TypeOptions(const TypeOptions<Ts...>& value) {
+            SetValue(value);
+        }
+};
 #pragma endregion

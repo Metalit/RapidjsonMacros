@@ -140,8 +140,18 @@ namespace rapidjson_macros_types {
     }
 
     template<class T>
+    inline bool GetIsTypeVector(rapidjson::Value& jsonValue, const std::vector<T>& _) {
+        return jsonValue.Is<T>();
+    }
+
+    template<class T>
     inline T GetValueTypeVectorOptional(rapidjson::Value& jsonValue, const std::optional<std::vector<T>>& _) {
         return jsonValue.Get<T>();
+    }
+
+    template<class T>
+    inline bool GetIsTypeVectorOptional(rapidjson::Value& jsonValue, const std::optional<std::vector<T>>& _) {
+        return jsonValue.Is<T>();
     }
 
     template<class T>
@@ -160,8 +170,18 @@ namespace rapidjson_macros_types {
     }
 
     template<class T>
+    inline bool GetIsTypeMap(rapidjson::Value& jsonValue, const std::map<std::string, T>& _) {
+        return jsonValue.Is<T>();
+    }
+
+    template<class T>
     inline T GetValueTypeMapOptional(rapidjson::Value& jsonValue, const std::optional<std::map<std::string, T>>& _) {
         return jsonValue.Get<T>();
+    }
+
+    template<class T>
+    inline bool GetIsTypeMapOptional(rapidjson::Value& jsonValue, const std::optional<std::map<std::string, T>>& _) {
+        return jsonValue.Is<T>();
     }
 
     template<class T>

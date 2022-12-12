@@ -34,12 +34,7 @@ extern "C" void setup(ModInfo& info) {
         getLogger().error("error reading test class: %s", e.what());
     }
     CRASH_UNLESS(testClass == testClass2);
-    try {
-        WriteToFile(GetConfigPath(), testClass);
-        WriteToFile(GetConfigPath(), testClass2);
-    } catch(const std::exception& e) {
-        getLogger().error("error writing test class: %s", e.what());
-    }
+    WriteToFile(GetConfigPath(), testClass);
 
     getLogger().info("Completed setup!");
 }

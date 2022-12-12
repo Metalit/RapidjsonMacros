@@ -55,7 +55,7 @@ if ($all -eq $false) {
 if ($all -eq $false) {
     $pattern = "("
     if ($self -eq $true) {
-        $modID = (Get-Content "./mod.json" -Raw | ConvertFrom-Json).id
+        $modID = (Get-Content "./qpm.json" -Raw | ConvertFrom-Json).info.id
         $pattern += "$modID|"
     }
     if (![string]::IsNullOrEmpty($custom)) {

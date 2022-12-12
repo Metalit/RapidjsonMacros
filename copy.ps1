@@ -18,7 +18,7 @@ Param(
     [String] $custom="",
 
     [Parameter(Mandatory=$false)]
-    [Switch] $file,
+    [String] $file="",
 
     [Parameter(Mandatory=$false)]
     [Switch] $help
@@ -46,15 +46,20 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-foreach ($child in (Get-Childitem -Path build\* -File -Include librapidjson-macros*)) {
-    $fileName = $child.Name
-    if ($useDebug -eq $true) {
-        & adb push build/debug/$fileName /sdcard/Android/data/com.beatgames.beatsaber/files/mods/$fileName
-    } else {
-        & adb push build/$fileName /sdcard/Android/data/com.beatgames.beatsaber/files/mods/$fileName
-    }
+$version = (Get-Content "./qpm.json" -Raw | ConvertFrom-Json).info.version
+$libname = "librapidjson-macros_" + $version.replace(".", "_") + ".so"
+
+& adb shell rm /sdcard/Android/data/com.beatgames.beatsaber/files/mods/librapidjson-macros_*
+
+if ($useDebug -eq $true) {
+    & adb push build/debug/$libname /sdcard/Android/data/com.beatgames.beatsaber/files/mods/$libname
+} else {
+    & adb push build/$libname /sdcard/Android/data/com.beatgames.beatsaber/files/mods/$libname
 }
 
 & $PSScriptRoot/restart-game.ps1
 
-if ($log -eq $true) { & $PSScriptRoot/start-logging.ps1 -self:$self -all:$all -custom:$custom -file:$file }
+if ($log -eq $true) {
+    & adb logcat -c
+    & $PSScriptRoot/start-logging.ps1 -self:$self -all:$all -custom:$custom -file:$file
+}

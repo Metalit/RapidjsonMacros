@@ -11,7 +11,6 @@ class name : public JSONClass { \
         static inline std::vector<void(*)(const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> serializers; \
         static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonValue)> deserializers; \
         std::optional<rapidjson_macros_types::CopyableValue> extraFields = std::nullopt; \
-        static inline bool keepExtraFields = true; \
     public: \
         rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const { \
             rapidjson::Value jsonObject(rapidjson::kObjectType); \
@@ -27,7 +26,7 @@ class name : public JSONClass { \
             if(keepExtraFields) \
                 extraFields = jsonValue; \
         } \
-        bool operator==(const class name&) const = default; \
+        bool operator==(class name const&) const = default; \
         name() = default; \
         __VA_ARGS__ \
 };
@@ -35,14 +34,7 @@ class name : public JSONClass { \
 
 // prevents the class from preserving json data not specified in class fields and serialization
 #pragma region DISCARD_EXTRA_FIELDS
-#define DISCARD_EXTRA_FIELDS \
-class _ExtraFieldBoolSetter { \
-    _ExtraFieldBoolSetter() { \
-        SelfType::keepExtraFields = false; \
-    } \
-    friend class rapidjson_macros_types::ConstructorRunner<_ExtraFieldBoolSetter>; \
-    static inline rapidjson_macros_types::ConstructorRunner<_ExtraFieldBoolSetter> _ExtraFieldBoolSetterInstance; \
-};
+#define DISCARD_EXTRA_FIELDS static inline bool keepExtraFields = false;
 #pragma endregion
 
 // add an action to be run during deserialization (requires an identifier unique to the class)
@@ -78,7 +70,7 @@ class _SerializeAction_##uid { \
 // define an automatically serialized / deserialized instance variable with a custom name in the json file
 #pragma region NAMED_VALUE(type, name, jsonName)
 #define NAMED_VALUE(type, name, jsonName) \
-type name; \
+type name = {}; \
 class _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
         serializers.emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
@@ -86,24 +78,8 @@ class _JSONValueAdder_##name { \
         }); \
         deserializers.emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
             rapidjson_macros_auto::Deserialize(self->name, jsonName, jsonValue); \
-        }); \
-    } \
-    friend class rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name>; \
-    static inline rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name> _##name##_JSONValueAdderInstance; \
-};
-#pragma endregion
-
-// define an automatically serialized / deserialized std::optional instance variable with a custom name in the json file
-#pragma region NAMED_VALUE_OPTIONAL(type, name, jsonName)
-#define NAMED_VALUE_OPTIONAL(type, name, jsonName) \
-std::optional<type> name = std::nullopt; \
-class _JSONValueAdder_##name { \
-    _JSONValueAdder_##name() { \
-        serializers.emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
-            rapidjson_macros_auto::SerializeOptional(self->name, jsonName, jsonObject, allocator); \
-        }); \
-        deserializers.emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
-            rapidjson_macros_auto::DeserializeOptional(self->name, jsonName, jsonValue); \
+            if(SelfType::keepExtraFields) \
+                rapidjson_macros_serialization::RemoveMember(jsonValue, jsonName); \
         }); \
     } \
     friend class rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name>; \
@@ -121,13 +97,17 @@ class _JSONValueAdder_##name { \
             rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
         }); \
         deserializers.emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
-            rapidjson_macros_auto::DeserializeDefault(self->name, jsonName, def, jsonValue); \
+            rapidjson_macros_auto::Deserialize(self->name, jsonName, def, jsonValue); \
+            if(SelfType::keepExtraFields) \
+                rapidjson_macros_serialization::RemoveMember(jsonValue, jsonName); \
         }); \
     } \
     friend class rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name>; \
     static inline rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name> _##name##_JSONValueAdderInstance; \
 };
 #pragma endregion
+
+#define NAMED_VALUE_OPTIONAL(type, name, jsonName) NAMED_VALUE(std::optional<type>, name, jsonName)
 
 // define an automatically serialized / deserialized std::vector with a custom name in the json file
 #define NAMED_VECTOR(type, name, jsonName) NAMED_VALUE(std::vector<type>, name, jsonName)
@@ -166,7 +146,7 @@ class TypeOptions : public JSONClass {
     private:
         rapidjson::Document storedValue;
         template<typename C, typename... Cs>
-        static bool CheckValueWithTypes(const rapidjson::Value& jsonValue) {
+        static bool CheckValueWithTypes(rapidjson::Value const& jsonValue) {
             if constexpr(sizeof...(Cs) > 0)
                 return jsonValue.Is<C>() || CheckValueWithTypes<Cs...>(jsonValue);
             return jsonValue.Is<C>();
@@ -174,7 +154,7 @@ class TypeOptions : public JSONClass {
     public:
         void Deserialize(rapidjson::Value& jsonValue) {
             if(!CheckValueWithTypes<Ts...>(jsonValue)) {
-                throw JSONException("value was an unexpected type (" +
+                throw JSONException(" was an unexpected type (" +
                 rapidjson_macros_types::JsonTypeName(jsonValue) + "), type expected was: " +
                 rapidjson_macros_types::CppTypeName(TypeOptions<Ts...>()));
             } else
@@ -208,7 +188,7 @@ class TypeOptions : public JSONClass {
             SetValue(other);
             return *this;
         }
-        TypeOptions<Ts...>& operator=(const TypeOptions<Ts...>& other) {
+        TypeOptions<Ts...>& operator=(TypeOptions<Ts...> const& other) {
             SetValue(other);
             return *this;
         }
@@ -218,7 +198,7 @@ class TypeOptions : public JSONClass {
         TypeOptions(T value) {
             SetValue(value);
         }
-        TypeOptions(const TypeOptions<Ts...>& value) {
+        TypeOptions(TypeOptions<Ts...> const& value) {
             SetValue(value);
         }
 };

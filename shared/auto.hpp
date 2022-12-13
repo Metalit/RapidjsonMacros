@@ -2,107 +2,207 @@
 
 #include "../shared/serialization.hpp"
 
-#define SPECIALIZATION(type, macro, ...) \
-__VA_ARGS__ void Deserialize(type& var, S const& jsonName, rapidjson::Value& jsonValue) { \
-    DESERIALIZE_##macro(var, jsonName); \
-} \
-__VA_ARGS__ void DeserializeOptional(std::optional<type>& var, S const& jsonName, rapidjson::Value& jsonValue) { \
-    DESERIALIZE_##macro##_OPTIONAL(var, jsonName); \
-} \
-__VA_ARGS__ void DeserializeDefault(type& var, S const& jsonName, const rapidjson_macros_types::with_constructible<type> auto& defaultValue, rapidjson::Value& jsonValue) { \
-    DESERIALIZE_##macro##_DEFAULT(var, jsonName, defaultValue); \
-} \
-__VA_ARGS__ void Serialize(const type& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
-    SERIALIZE_##macro(var, jsonName); \
-} \
-__VA_ARGS__ void SerializeOptional(const std::optional<type>& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
-    SERIALIZE_##macro##_OPTIONAL(var, jsonName); \
-}
-
-#define BASIC_SPECIALIZATION(type) \
-SPECIALIZATION(type, VALUE, template<class S>) \
-SPECIALIZATION(std::vector<type>, VECTOR_BASIC, template<class S>) \
-SPECIALIZATION(StringKeyedMap<type>, MAP_BASIC, template<class S>)
+#define TYPE_EXCEPTION_STRING " was an unexpected type (" + JsonTypeName(jsonValue) + "), type expected was: " + CppTypeName(var)
+#define THROW_TYPE_EXCEPTION_FALLBACK [&jsonValue, &var]() { throw JSONException(TYPE_EXCEPTION_STRING); }
+#define THROW_NOT_FOUND_EXCEPTION_FALLBACK [&jsonName]() { throw JSONException(GetNameString(jsonName) + " was not found"); }
 
 namespace rapidjson_macros_auto {
+    using namespace rapidjson_macros_serialization;
+    using namespace rapidjson_macros_types;
 
-    template<class T, class S>
-    void Deserialize(T& var, S const& jsonName, rapidjson::Value& jsonValue);
-    template<class T, class S>
-    void DeserializeOptional(std::optional<T>& var, S const& jsonName, rapidjson::Value& jsonValue);
-    template<class T, class S>
-    void DeserializeDefault(T& var, S const& jsonName, const rapidjson_macros_types::with_constructible<T> auto& defaultValue, rapidjson::Value& jsonValue);
+#pragma region simple
+    template<class T>
+    void Deserialize(T& var, auto const& jsonName, rapidjson::Value& jsonValue) {
+        auto& value = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
+        try {
+            DeserializeValue(value, var, THROW_TYPE_EXCEPTION_FALLBACK);
+        } catch(std::exception const& e) {
+            throw JSONException(GetNameString(jsonName) + "." + e.what());
+        }
+    }
+    template<class T>
+    void Deserialize(std::optional<T>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
+        auto fallback = [&var]() {
+            var = std::nullopt;
+        };
+        auto& value = GetMember(jsonValue, jsonName, fallback);
+        try {
+            DeserializeValue(value, var, fallback);
+        } catch(std::exception const& e) {
+            throw JSONException(GetNameString(jsonName) + "." + e.what());
+        }
+    }
+    template<class T, with_constructible<T> D>
+    void Deserialize(T& var, auto const& jsonName, D const& defaultValue, rapidjson::Value& jsonValue) {
+        auto fallback = [&var, &defaultValue]() {
+            var = defaultValue;
+        };
+        auto& value = GetMember(jsonValue, jsonName, fallback);
+        try {
+            DeserializeValue(value, var, fallback);
+        } catch(std::exception const& e) {
+            throw JSONException(GetNameString(jsonName) + "." + e.what());
+        }
+    }
 
-    template<class T, class S>
-    void Serialize(const T& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);
-    template<class T, class S>
-    void SerializeOptional(const std::optional<T>& var, S const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);
+    template<class T>
+    void Serialize(T const& var, auto const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) {
+        auto name = GetJSONString(GetDefaultName(jsonName), allocator);
+        jsonObject.AddMember(name, SerializeValue(var, allocator), allocator);
+    }
+    template<class T>
+    void Serialize(std::optional<T> const& var, auto const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) {
+        if(!var.has_value()) return;
+        auto name = GetJSONString(GetDefaultName(jsonName), allocator);
+        jsonObject.AddMember(name, SerializeValue(var, allocator), allocator);
+    }
+#pragma endregion
 
-    SPECIALIZATION(
-        T,
-        CLASS,
-        template<JSONClassDerived T, class S>
-    )
+#pragma region vector
+    template<class T>
+    void Deserialize(std::vector<T>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
+        auto& value = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
+        if(!value.IsArray())
+            throw JSONException(GetNameString(jsonName) + "." TYPE_EXCEPTION_STRING);
+        for(auto it = value.Begin(); it != value.End(); ++it) {
+            auto& inst = var.emplace_back(NewType(var));
+            try {
+                DeserializeValue(*it, inst, THROW_TYPE_EXCEPTION_FALLBACK);
+            } catch(std::exception const& e) {
+                throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]." + e.what());
+            }
+        }
+    }
+    template<class T>
+    void Deserialize(std::optional<std::vector<T>>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
+        auto fallback = [&var]() {
+            var = std::nullopt;
+        };
+        auto& value = GetMember(jsonValue, jsonName, fallback);
+        if(!value.IsArray())
+            return fallback();
+        for(auto it = value.Begin(); it != value.End(); ++it) {
+            auto& inst = var->emplace_back(NewType(var));
+            try {
+                DeserializeValue(*it, inst, fallback);
+            } catch(std::exception const& e) {
+                throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]." + e.what());
+            }
+        }
+    }
+    template<class T, with_constructible<std::vector<T>> D>
+    void Deserialize(std::vector<T>& var, auto const& jsonName, D const& defaultValue, rapidjson::Value& jsonValue) {
+        auto fallback = [&var, &defaultValue]() {
+            var = defaultValue;
+        };
+        auto& value = GetMember(jsonValue, jsonName, fallback);
+        if(!value.IsArray())
+            return fallback();
+        for(auto it = value.Begin(); it != value.End(); ++it) {
+            auto& inst = var.emplace_back(NewType(var));
+            try {
+                DeserializeValue(*it, inst, fallback);
+            } catch(std::exception const& e) {
+                throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]." + e.what());
+            }
+        }
+    }
 
-    SPECIALIZATION(
-        std::vector<T>,
-        VECTOR,
-        template<JSONClassDerived T, class S>
-    )
+    template<class T>
+    void Serialize(std::vector<T> const& var, auto const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) {
+        rapidjson::Value newValue(rapidjson::kArrayType);
+        for(auto const& element : var) {
+            newValue.GetArray().PushBack(SerializeValue(element, allocator), allocator);
+        }
+        auto name = GetJSONString(GetDefaultName(jsonName), allocator);
+        jsonObject.AddMember(name, newValue, allocator);
+    }
+    template<class T>
+    void Serialize(std::optional<std::vector<T>> const& var, auto const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) {
+        if(!var.has_value()) return;
+        rapidjson::Value newValue(rapidjson::kArrayType);
+        for(auto const& element : var.value()) {
+            newValue.GetArray().PushBack(SerializeValue(element, allocator), allocator);
+        }
+        auto name = GetJSONString(GetDefaultName(jsonName), allocator);
+        jsonObject.AddMember(name, newValue, allocator);
+    }
+#pragma endregion
 
-    SPECIALIZATION(
-        StringKeyedMap<T>,
-        MAP,
-        template<JSONClassDerived T, class S>
-    )
+#pragma region map
+    template<class T>
+    void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
+        auto& value = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
+        if(!value.IsObject())
+            throw JSONException(GetNameString(jsonName) + "." TYPE_EXCEPTION_STRING);
+        for(auto& member : value.GetObject()) {
+            auto& inst = var[member.name.GetString()] = NewType(var);
+            try {
+                DeserializeValue(member.value, inst, THROW_TYPE_EXCEPTION_FALLBACK);
+            } catch(std::exception const& e) {
+                throw JSONException(GetNameString(jsonName) + "[" + member.name.GetString() + "]." + e.what());
+            }
+        }
+    }
+    template<class T>
+    void Deserialize(std::optional<StringKeyedMap<T>>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
+        auto fallback = [&var]() {
+            var = std::nullopt;
+        };
+        auto& value = GetMember(jsonValue, jsonName, fallback);
+        if(!value.IsObject())
+            return fallback();
+        for(auto& member : value.GetObject()) {
+            auto& inst = var[member.name.GetString()] = NewType(var);
+            try {
+                DeserializeValue(member.value, inst, fallback);
+            } catch(std::exception const& e) {
+                throw JSONException(GetNameString(jsonName) + "[" + member.name.GetString() + "]." + e.what());
+            }
+        }
+    }
+    template<class T, with_constructible<StringKeyedMap<T>> D>
+    void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, D const& defaultValue, rapidjson::Value& jsonValue) {
+        auto fallback = [&var, &defaultValue]() {
+            var = defaultValue;
+        };
+        auto& value = GetMember(jsonValue, jsonName, fallback);
+        if(!value.IsObject())
+            return fallback();
+        for(auto& member : value.GetObject()) {
+            auto& inst = var[member.name.GetString()] = NewType(var);
+            try {
+                DeserializeValue(member.value, inst, fallback);
+            } catch(std::exception const& e) {
+                throw JSONException(GetNameString(jsonName) + "[" + member.name.GetString() + "]." + e.what());
+            }
+        }
+    }
 
-    BASIC_SPECIALIZATION(bool)
-    BASIC_SPECIALIZATION(int)
-    BASIC_SPECIALIZATION(unsigned)
-    BASIC_SPECIALIZATION(int64_t)
-    BASIC_SPECIALIZATION(uint64_t)
-    BASIC_SPECIALIZATION(double)
-    BASIC_SPECIALIZATION(float)
-    BASIC_SPECIALIZATION(std::string)
+    template<class T>
+    void Serialize(StringKeyedMap<T> const& var, auto const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) {
+        rapidjson::Value newValue(rapidjson::kObjectType);
+        for(auto const& member : var) {
+            auto memberName = GetJSONString(member.first, allocator);
+            newValue.AddMember(memberName, SerializeValue(member.second, allocator), allocator);
+        }
+        auto name = GetJSONString(GetDefaultName(jsonName), allocator);
+        jsonObject.AddMember(name, newValue, allocator);
+    }
+    template<class T>
+    void Serialize(std::optional<StringKeyedMap<T>> const& var, auto const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) {
+        if(!var.has_value()) return;
+        rapidjson::Value newValue(rapidjson::kObjectType);
+        for(auto const& member : var.value()) {
+            auto memberName = GetJSONString(member.first, allocator);
+            newValue.AddMember(memberName, SerializeValue(member.second, allocator), allocator);
+        }
+        auto name = GetJSONString(GetDefaultName(jsonName), allocator);
+        jsonObject.AddMember(name, newValue, allocator);
+    }
+#pragma endregion
 }
 
-#pragma region undefs
-#undef SPECIALIZATION
-#undef BASIC_SPECIALIZATION
-
-#undef RAPIDJSON_MACROS_NOT_FOUND_EXCPETION_STRING
-#undef RAPIDJSON_MACROS_TYPE_EXCEPTION_STRING
-#undef RAPIDJSON_MACROS_EXCEPTION_CONTEXT
-
-#undef DESERIALIZE_VALUE
-#undef DESERIALIZE_VALUE_OPTIONAL
-#undef DESERIALIZE_VALUE_DEFAULT
-#undef DESERIALIZE_CLASS
-#undef DESERIALIZE_CLASS_OPTIONAL
-#undef DESERIALIZE_CLASS_DEFAULT
-#undef DESERIALIZE_VECTOR
-#undef DESERIALIZE_VECTOR_OPTIONAL
-#undef DESERIALIZE_VECTOR_DEFAULT
-#undef DESERIALIZE_VECTOR_BASIC
-#undef DESERIALIZE_VECTOR_BASIC_OPTIONAL
-#undef DESERIALIZE_VECTOR_BASIC_DEFAULT
-#undef DESERIALIZE_MAP
-#undef DESERIALIZE_MAP_OPTIONAL
-#undef DESERIALIZE_MAP_DEFAULT
-#undef DESERIALIZE_MAP_BASIC
-#undef DESERIALIZE_MAP_BASIC_OPTIONAL
-#undef DESERIALIZE_MAP_BASIC_DEFAULT
-
-#undef SERIALIZE_VALUE
-#undef SERIALIZE_VALUE_OPTIONAL
-#undef SERIALIZE_CLASS
-#undef SERIALIZE_CLASS_OPTIONAL
-#undef SERIALIZE_VECTOR
-#undef SERIALIZE_VECTOR_OPTIONAL
-#undef SERIALIZE_VECTOR_BASIC
-#undef SERIALIZE_VECTOR_BASIC_OPTIONAL
-#undef SERIALIZE_MAP
-#undef SERIALIZE_MAP_OPTIONAL
-#undef SERIALIZE_MAP_BASIC
-#undef SERIALIZE_MAP_BASIC_OPTIONAL
-#pragma endregion
+#undef TYPE_EXCEPTION_STRING
+#undef THROW_TYPE_EXCEPTION_FALLBACK
+#undef THROW_NOT_FOUND_EXCEPTION_FALLBACK

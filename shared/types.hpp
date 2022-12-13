@@ -3,6 +3,7 @@
 #include "beatsaber-hook/shared/config/rapidjson-utils.hpp"
 
 #include <map>
+#include <concepts>
 
 class JSONException : public std::exception {
     private:
@@ -15,6 +16,8 @@ class JSONException : public std::exception {
 };
 
 class JSONClass {
+    protected:
+        static inline bool keepExtraFields = true;
     public:
         virtual void Deserialize(rapidjson::Value& jsonValue) = 0;
         virtual rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const = 0;
@@ -25,12 +28,29 @@ template<class T>
 concept JSONClassDerived = std::is_base_of_v<JSONClass, T>;
 
 template<class T>
+concept JSONBasicType = requires(T t) { rapidjson::internal::TypeHelper<rapidjson::Value, std::decay_t<T>>::Is; };
+
+template<class T>
 using StringKeyedMap = std::map<std::string, T>;
 
 namespace rapidjson_macros_types {
 
-    template < class From, class T >
+    template<class From, class T>
     concept with_constructible = std::is_constructible_v<T, From>;
+
+    template<typename T>
+    concept callable = requires(T t) { t(); };
+
+    template<typename T>
+    concept is_optional = std::same_as<T, std::optional<typename T::value_type>>;
+
+    template<bool B, class T>
+    struct maybe_optional_impl { using type = T; };
+    template<class T>
+    struct maybe_optional_impl<true, T> { using type = typename T::value_type; };
+
+    template<class T>
+    using maybe_optional_t = typename maybe_optional_impl<is_optional<T>, T>::type;
 
     class CopyableValue {
         public:
@@ -120,77 +140,37 @@ namespace rapidjson_macros_types {
     }
 
     template<class T>
+    inline T GetValueType(rapidjson::Value& jsonValue, const std::optional<T>& _) {
+        return jsonValue.Get<T>();
+    }
+
+    template<class T>
     inline bool GetIsType(rapidjson::Value& jsonValue, const T& _) {
         return jsonValue.Is<T>();
     }
 
     template<class T>
-    inline T GetValueTypeOptional(rapidjson::Value& jsonValue, const std::optional<T>& _) {
-        return jsonValue.Get<T>();
-    }
-
-    template<class T>
-    inline bool GetIsTypeOptional(rapidjson::Value& jsonValue, const std::optional<T>& _) {
+    inline bool GetIsType(rapidjson::Value& jsonValue, const std::optional<T>& _) {
         return jsonValue.Is<T>();
     }
 
     template<class T>
-    inline T GetValueTypeVector(rapidjson::Value& jsonValue, const std::vector<T>& _) {
-        return jsonValue.Get<T>();
-    }
-
-    template<class T>
-    inline bool GetIsTypeVector(rapidjson::Value& jsonValue, const std::vector<T>& _) {
-        return jsonValue.Is<T>();
-    }
-
-    template<class T>
-    inline T GetValueTypeVectorOptional(rapidjson::Value& jsonValue, const std::optional<std::vector<T>>& _) {
-        return jsonValue.Get<T>();
-    }
-
-    template<class T>
-    inline bool GetIsTypeVectorOptional(rapidjson::Value& jsonValue, const std::optional<std::vector<T>>& _) {
-        return jsonValue.Is<T>();
-    }
-
-    template<class T>
-    inline T NewVectorType(const std::vector<T>& _) {
+    inline T NewType(const std::vector<T>& _) {
         return T();
     }
 
     template<class T>
-    inline T NewVectorTypeOptional(const std::optional<std::vector<T>>& _) {
+    inline T NewType(const std::optional<std::vector<T>>& _) {
         return T();
     }
 
     template<class T>
-    inline T GetValueTypeMap(rapidjson::Value& jsonValue, const std::map<std::string, T>& _) {
-        return jsonValue.Get<T>();
-    }
-
-    template<class T>
-    inline bool GetIsTypeMap(rapidjson::Value& jsonValue, const std::map<std::string, T>& _) {
-        return jsonValue.Is<T>();
-    }
-
-    template<class T>
-    inline T GetValueTypeMapOptional(rapidjson::Value& jsonValue, const std::optional<std::map<std::string, T>>& _) {
-        return jsonValue.Get<T>();
-    }
-
-    template<class T>
-    inline bool GetIsTypeMapOptional(rapidjson::Value& jsonValue, const std::optional<std::map<std::string, T>>& _) {
-        return jsonValue.Is<T>();
-    }
-
-    template<class T>
-    inline T NewMapType(const std::map<std::string, T>& _) {
+    inline T NewType(const std::map<std::string, T>& _) {
         return T();
     }
 
     template<class T>
-    inline T NewMapTypeOptional(const std::optional<std::map<std::string, T>>& _) {
+    inline T NewType(const std::optional<std::map<std::string, T>>& _) {
         return T();
     }
 }

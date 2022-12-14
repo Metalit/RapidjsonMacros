@@ -26,7 +26,6 @@ class name : public JSONClass { \
             JSONClass::DeserializeInternal(this, jsonValue); \
         } \
         bool operator==(class name const&) const = default; \
-        name() = default; \
     private: \
         static inline std::vector<void(*)(const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> serializers; \
         static inline std::vector<void(*)(SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue)> deserializers; \

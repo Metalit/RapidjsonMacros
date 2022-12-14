@@ -7,10 +7,12 @@
 #define DECLARE_JSON_CLASS(name, ...) \
 class name : public JSONClass { \
     using SelfType = name; \
+    friend class JSONClass; \
+    public: \
+        __VA_ARGS__ \
     private: \
-        static inline std::vector<void(*)(const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> serializers; \
-        static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonValue)> deserializers; \
-        std::optional<rapidjson_macros_types::CopyableValue> extraFields = std::nullopt; \
+        template<class T> \
+        using const_t = std::conditional_t<name::keepExtraFields, T, std::add_const_t<T>>; \
     public: \
         rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const { \
             rapidjson::Value jsonObject(rapidjson::kObjectType); \
@@ -20,21 +22,21 @@ class name : public JSONClass { \
                 method(this, jsonObject, allocator); \
             return jsonObject; \
         } \
-        void Deserialize(rapidjson::Value& jsonValue) { \
-            for(auto& method : deserializers) \
-                method(this, jsonValue); \
-            if(keepExtraFields) \
-                extraFields = jsonValue; \
+        void Deserialize(rapidjson::Value const& jsonValue) { \
+            JSONClass::DeserializeInternal(this, jsonValue); \
         } \
         bool operator==(class name const&) const = default; \
         name() = default; \
-        __VA_ARGS__ \
+    private: \
+        static inline std::vector<void(*)(const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> serializers; \
+        static inline std::vector<void(*)(SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue)> deserializers; \
+        std::optional<rapidjson_macros_types::CopyableValue> extraFields = std::nullopt; \
 };
 #pragma endregion
 
 // prevents the class from preserving json data not specified in class fields and serialization
 #pragma region DISCARD_EXTRA_FIELDS
-#define DISCARD_EXTRA_FIELDS static inline bool keepExtraFields = false;
+#define DISCARD_EXTRA_FIELDS static inline constexpr bool keepExtraFields = false;
 #pragma endregion
 
 // add an action to be run during deserialization (requires an identifier unique to the class)
@@ -43,7 +45,7 @@ class name : public JSONClass { \
 #define DESERIALIZE_ACTION(uid, ...) \
 class _DeserializeAction_##uid { \
     _DeserializeAction_##uid() { \
-        deserializers.emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
+        deserializers.emplace_back([](SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue) { \
             __VA_ARGS__ \
         }); \
     } \
@@ -76,9 +78,9 @@ class _JSONValueAdder_##name { \
         serializers.emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
         }); \
-        deserializers.emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
+        deserializers.emplace_back([](SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue) { \
             rapidjson_macros_auto::Deserialize(self->name, jsonName, jsonValue); \
-            if(SelfType::keepExtraFields) \
+            if constexpr(SelfType::keepExtraFields) \
                 rapidjson_macros_serialization::RemoveMember(jsonValue, jsonName); \
         }); \
     } \
@@ -96,9 +98,9 @@ class _JSONValueAdder_##name { \
         serializers.emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
         }); \
-        deserializers.emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
+        deserializers.emplace_back([](SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue) { \
             rapidjson_macros_auto::Deserialize(self->name, jsonName, def, jsonValue); \
-            if(SelfType::keepExtraFields) \
+            if constexpr(SelfType::keepExtraFields) \
                 rapidjson_macros_serialization::RemoveMember(jsonValue, jsonName); \
         }); \
     } \
@@ -144,7 +146,7 @@ class _JSONValueAdder_##name { \
 template<typename... Ts>
 class TypeOptions : public JSONClass {
     private:
-        rapidjson::Document storedValue;
+        rapidjson_macros_types::CopyableValue storedValue;
         template<typename C, typename... Cs>
         static bool CheckValueWithTypes(rapidjson::Value const& jsonValue) {
             if constexpr(sizeof...(Cs) > 0)
@@ -152,43 +154,36 @@ class TypeOptions : public JSONClass {
             return jsonValue.Is<C>();
         }
     public:
-        void Deserialize(rapidjson::Value& jsonValue) {
+        void Deserialize(rapidjson::Value const& jsonValue) {
             if(!CheckValueWithTypes<Ts...>(jsonValue)) {
                 throw JSONException(" was an unexpected type (" +
                 rapidjson_macros_types::JsonTypeName(jsonValue) + "), type expected was: " +
                 rapidjson_macros_types::CppTypeName(TypeOptions<Ts...>()));
             } else
-                storedValue.Swap(jsonValue);
+                storedValue = jsonValue;
         }
         rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const {
             rapidjson::Value ret;
-            ret.CopyFrom(storedValue, allocator);
+            ret.CopyFrom(storedValue.document, allocator);
             return ret;
         }
 
         template<typename T>
         requires (std::is_convertible_v<Ts, T> || ...)
         std::optional<T> GetValue() {
-            if(storedValue.Is<T>())
-                return storedValue.Get<T>();
+            if(storedValue.document.Is<T>())
+                return storedValue.document.Get<T>();
             return std::nullopt;
         }
         template<typename T>
         requires (std::is_convertible_v<T, Ts> || ...)
         void SetValue(T&& value) {
             using TypeHelper = rapidjson::internal::TypeHelper<rapidjson::Value, std::decay_t<T>>;
-            TypeHelper::Set(storedValue, value, storedValue.GetAllocator());
-        }
-        void SetValue(const TypeOptions<Ts...>& value) {
-            storedValue.CopyFrom(value.storedValue, storedValue.GetAllocator());
+            TypeHelper::Set(storedValue.document, value, storedValue.document.GetAllocator());
         }
         template<typename T>
         requires (std::is_convertible_v<T, Ts> || ...)
         TypeOptions<Ts...>& operator=(T&& other) {
-            SetValue(other);
-            return *this;
-        }
-        TypeOptions<Ts...>& operator=(TypeOptions<Ts...> const& other) {
             SetValue(other);
             return *this;
         }
@@ -198,8 +193,6 @@ class TypeOptions : public JSONClass {
         TypeOptions(T value) {
             SetValue(value);
         }
-        TypeOptions(TypeOptions<Ts...> const& value) {
-            SetValue(value);
-        }
+        TypeOptions(TypeOptions<Ts...> const& value) = default;
 };
 #pragma endregion

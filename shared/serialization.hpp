@@ -9,7 +9,7 @@ namespace rapidjson_macros_serialization {
 
     template<class T, rapidjson_macros_types::callable F>
     requires std::is_constructible_v<std::string, T>
-    inline rapidjson::Value& GetMember(rapidjson::Value& jsonObject, T const& search, F const& onNotFound) {
+    inline rapidjson::Value const& GetMember(rapidjson::Value const& jsonObject, T const& search, F const& onNotFound) {
         if(!jsonObject.IsObject()) {
             std::stringstream exc{};
             exc << " was an unexpected type (";
@@ -26,7 +26,7 @@ namespace rapidjson_macros_serialization {
 
     template<class T, rapidjson_macros_types::callable F>
     requires std::is_constructible_v<std::string, T>
-    inline rapidjson::Value& GetMember(rapidjson::Value& jsonObject, std::vector<T> const& search, F const& onNotFound) {
+    inline rapidjson::Value const& GetMember(rapidjson::Value const& jsonObject, std::vector<T> const& search, F const& onNotFound) {
         if(!jsonObject.IsObject()) {
             std::stringstream exc{};
             exc << " was an unexpected type (";
@@ -43,17 +43,20 @@ namespace rapidjson_macros_serialization {
         return jsonObject;
     }
 
-    template<class T>
-    requires std::is_constructible_v<std::string, T>
-    void RemoveMember(rapidjson::Value& jsonObject, T const& search) {
-        jsonObject.RemoveMember(search);
+    template<class J, class T>
+    requires std::is_constructible_v<std::string, T> && std::is_same_v<rapidjson::Value, std::remove_const_t<J>>
+    void RemoveMember(J& jsonObject, T const& search) {
+        if constexpr(!std::is_const_v<J>)
+            jsonObject.RemoveMember(search);
     }
 
-    template<class T>
-    requires std::is_constructible_v<std::string, T>
-    void RemoveMember(rapidjson::Value& jsonObject, std::vector<T> const& search) {
-        for(auto& name : search)
-            jsonObject.RemoveMember(name);
+    template<class J, class T>
+    requires std::is_constructible_v<std::string, T> && std::is_same_v<rapidjson::Value, std::remove_const_t<J>>
+    void RemoveMember(J& jsonObject, std::vector<T> const& search) {
+        if constexpr(!std::is_const_v<J>) {
+            for(auto& name : search)
+                jsonObject.RemoveMember(name);
+        }
     }
 
     template<class T>
@@ -90,7 +93,7 @@ namespace rapidjson_macros_serialization {
     }
 
     template<class T, rapidjson_macros_types::callable F>
-    void DeserializeValue(rapidjson::Value& value, T& variable, F const& onWrongType) {
+    void DeserializeValue(rapidjson::Value const& value, T& variable, F const& onWrongType) {
         if constexpr(JSONClassDerived<rapidjson_macros_types::maybe_optional_t<T>>) {
             if constexpr(rapidjson_macros_types::is_optional<T>) {
                 if(!variable.has_value())

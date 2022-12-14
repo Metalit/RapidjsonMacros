@@ -17,9 +17,20 @@ class JSONException : public std::exception {
 
 class JSONClass {
     protected:
-        static inline bool keepExtraFields = true;
+        template<class S>
+        static void DeserializeInternal(S* self, rapidjson::Value const& jsonValue) {
+            if constexpr(S::keepExtraFields) {
+                self->extraFields = jsonValue;
+                for(auto& method : self->deserializers)
+                    method(self, self->extraFields->document);
+            } else {
+                for(auto& method : self->deserializers)
+                    method(self, jsonValue);
+            }
+        }
     public:
-        virtual void Deserialize(rapidjson::Value& jsonValue) = 0;
+        static inline constexpr bool keepExtraFields = true;
+        virtual void Deserialize(rapidjson::Value const& jsonValue) = 0;
         virtual rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const = 0;
         bool operator==(const JSONClass&) const = default; \
 };
@@ -84,7 +95,7 @@ namespace rapidjson_macros_types {
         free(realname);
         return s;
     }
-    inline std::string JsonTypeName(rapidjson::Value& jsonValue) {
+    inline std::string JsonTypeName(rapidjson::Value const& jsonValue) {
         auto type = jsonValue.GetType();
         switch (type) {
         case rapidjson::kNullType:
@@ -135,22 +146,22 @@ namespace rapidjson_macros_types {
     }
 
     template<class T>
-    inline T GetValueType(rapidjson::Value& jsonValue, const T& _) {
+    inline T GetValueType(rapidjson::Value const& jsonValue, const T& _) {
         return jsonValue.Get<T>();
     }
 
     template<class T>
-    inline T GetValueType(rapidjson::Value& jsonValue, const std::optional<T>& _) {
+    inline T GetValueType(rapidjson::Value const& jsonValue, const std::optional<T>& _) {
         return jsonValue.Get<T>();
     }
 
     template<class T>
-    inline bool GetIsType(rapidjson::Value& jsonValue, const T& _) {
+    inline bool GetIsType(rapidjson::Value const& jsonValue, const T& _) {
         return jsonValue.Is<T>();
     }
 
     template<class T>
-    inline bool GetIsType(rapidjson::Value& jsonValue, const std::optional<T>& _) {
+    inline bool GetIsType(rapidjson::Value const& jsonValue, const std::optional<T>& _) {
         return jsonValue.Is<T>();
     }
 

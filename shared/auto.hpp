@@ -12,7 +12,7 @@ namespace rapidjson_macros_auto {
 
 #pragma region simple
     template<class T>
-    void Deserialize(T& var, auto const& jsonName, rapidjson::Value& jsonValue) {
+    void Deserialize(T& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
         auto& value = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         try {
             DeserializeValue(value, var, THROW_TYPE_EXCEPTION_FALLBACK);
@@ -21,7 +21,7 @@ namespace rapidjson_macros_auto {
         }
     }
     template<class T>
-    void Deserialize(std::optional<T>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
+    void Deserialize(std::optional<T>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
         auto fallback = [&var]() {
             var = std::nullopt;
         };
@@ -33,7 +33,7 @@ namespace rapidjson_macros_auto {
         }
     }
     template<class T, with_constructible<T> D>
-    void Deserialize(T& var, auto const& jsonName, D const& defaultValue, rapidjson::Value& jsonValue) {
+    void Deserialize(T& var, auto const& jsonName, D const& defaultValue, rapidjson::Value const& jsonValue) {
         auto fallback = [&var, &defaultValue]() {
             var = defaultValue;
         };
@@ -60,7 +60,7 @@ namespace rapidjson_macros_auto {
 
 #pragma region vector
     template<class T>
-    void Deserialize(std::vector<T>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
+    void Deserialize(std::vector<T>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
         auto& value = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         if(!value.IsArray())
             throw JSONException(GetNameString(jsonName) + "." TYPE_EXCEPTION_STRING);
@@ -74,7 +74,7 @@ namespace rapidjson_macros_auto {
         }
     }
     template<class T>
-    void Deserialize(std::optional<std::vector<T>>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
+    void Deserialize(std::optional<std::vector<T>>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
         auto fallback = [&var]() {
             var = std::nullopt;
         };
@@ -91,7 +91,7 @@ namespace rapidjson_macros_auto {
         }
     }
     template<class T, with_constructible<std::vector<T>> D>
-    void Deserialize(std::vector<T>& var, auto const& jsonName, D const& defaultValue, rapidjson::Value& jsonValue) {
+    void Deserialize(std::vector<T>& var, auto const& jsonName, D const& defaultValue, rapidjson::Value const& jsonValue) {
         auto fallback = [&var, &defaultValue]() {
             var = defaultValue;
         };
@@ -131,7 +131,7 @@ namespace rapidjson_macros_auto {
 
 #pragma region map
     template<class T>
-    void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
+    void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
         auto& value = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         if(!value.IsObject())
             throw JSONException(GetNameString(jsonName) + "." TYPE_EXCEPTION_STRING);
@@ -145,7 +145,7 @@ namespace rapidjson_macros_auto {
         }
     }
     template<class T>
-    void Deserialize(std::optional<StringKeyedMap<T>>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
+    void Deserialize(std::optional<StringKeyedMap<T>>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
         auto fallback = [&var]() {
             var = std::nullopt;
         };
@@ -162,7 +162,7 @@ namespace rapidjson_macros_auto {
         }
     }
     template<class T, with_constructible<StringKeyedMap<T>> D>
-    void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, D const& defaultValue, rapidjson::Value& jsonValue) {
+    void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, D const& defaultValue, rapidjson::Value const& jsonValue) {
         auto fallback = [&var, &defaultValue]() {
             var = defaultValue;
         };

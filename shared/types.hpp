@@ -16,18 +16,6 @@ class JSONException : public std::exception {
 };
 
 class JSONClass {
-    protected:
-        template<class S>
-        static void DeserializeInternal(S* self, rapidjson::Value const& jsonValue) {
-            if constexpr(S::keepExtraFields) {
-                self->extraFields = jsonValue;
-                for(auto& method : self->deserializers)
-                    method(self, self->extraFields->document);
-            } else {
-                for(auto& method : self->deserializers)
-                    method(self, jsonValue);
-            }
-        }
     public:
         static inline constexpr bool keepExtraFields = true;
         virtual void Deserialize(rapidjson::Value const& jsonValue) = 0;

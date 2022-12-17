@@ -7,7 +7,7 @@
 #define DECLARE_JSON_CLASS(name, ...) \
 class name : public JSONClass { \
     using SelfType = name; \
-    friend class JSONClass; \
+    friend void rapidjson_macros_serialization::DeserializeInternal<name>(name* self, rapidjson::Value const& jsonValue); \
     public: \
         __VA_ARGS__ \
     private: \
@@ -18,17 +18,23 @@ class name : public JSONClass { \
             rapidjson::Value jsonObject(rapidjson::kObjectType); \
             if(keepExtraFields && extraFields.has_value()) \
                 jsonObject.CopyFrom(extraFields->document, allocator); \
-            for(auto& method : serializers) \
+            for(auto& method : serializers()) \
                 method(this, jsonObject, allocator); \
             return jsonObject; \
         } \
         void Deserialize(rapidjson::Value const& jsonValue) { \
-            JSONClass::DeserializeInternal(this, jsonValue); \
+            rapidjson_macros_serialization::DeserializeInternal(this, jsonValue); \
         } \
         bool operator==(class name const&) const = default; \
     private: \
-        static inline std::vector<void(*)(const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> serializers; \
-        static inline std::vector<void(*)(SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue)> deserializers; \
+        static inline std::vector<void(*)(const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)>& serializers() { \
+            static std::vector<void(*)(const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> instance = {}; \
+            return instance; \
+        } \
+        static inline std::vector<void(*)(SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue)>& deserializers() { \
+            static std::vector<void(*)(SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue)> instance = {}; \
+            return instance; \
+        } \
         std::optional<rapidjson_macros_types::CopyableValue> extraFields = std::nullopt; \
 };
 #pragma endregion
@@ -44,7 +50,7 @@ class name : public JSONClass { \
 #define DESERIALIZE_ACTION(uid, ...) \
 class _DeserializeAction_##uid { \
     _DeserializeAction_##uid() { \
-        deserializers.emplace_back([](SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue) { \
+        deserializers().emplace_back([](SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue) { \
             __VA_ARGS__ \
         }); \
     } \
@@ -59,7 +65,7 @@ class _DeserializeAction_##uid { \
 #define SERIALIZE_ACTION(uid, ...) \
 class _SerializeAction_##uid { \
     _SerializeAction_##uid() { \
-        serializers.emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serializers().emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             __VA_ARGS__ \
         }); \
     } \
@@ -74,10 +80,10 @@ class _SerializeAction_##uid { \
 type name = {}; \
 class _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
-        serializers.emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serializers().emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
         }); \
-        deserializers.emplace_back([](SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue) { \
+        deserializers().emplace_back([](SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue) { \
             rapidjson_macros_auto::Deserialize(self->name, jsonName, jsonValue); \
             if constexpr(SelfType::keepExtraFields) \
                 rapidjson_macros_serialization::RemoveMember(jsonValue, jsonName); \
@@ -94,10 +100,10 @@ class _JSONValueAdder_##name { \
 type name = def; \
 class _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
-        serializers.emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serializers().emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
         }); \
-        deserializers.emplace_back([](SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue) { \
+        deserializers().emplace_back([](SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue) { \
             rapidjson_macros_auto::Deserialize(self->name, jsonName, def, jsonValue); \
             if constexpr(SelfType::keepExtraFields) \
                 rapidjson_macros_serialization::RemoveMember(jsonValue, jsonName); \

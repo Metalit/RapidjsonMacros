@@ -122,6 +122,18 @@ namespace rapidjson_macros_serialization {
                 return rapidjson_macros_types::CreateJSONValue(variable, allocator);
         }
     }
+
+    template<class S>
+    void DeserializeInternal(S* self, rapidjson::Value const& jsonValue) {
+        if constexpr(S::keepExtraFields) {
+            self->extraFields = jsonValue;
+            for(auto& method : S::deserializers())
+                method(self, self->extraFields->document);
+        } else {
+            for(auto& method : S::deserializers())
+                method(self, jsonValue);
+        }
+    }
 }
 
 template<JSONClassDerived T>

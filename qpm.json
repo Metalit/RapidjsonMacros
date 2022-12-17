@@ -7,7 +7,8 @@
     "version": "0.4.4",
     "url": "https://github.com/Metalit/RapidjsonMacros",
     "additionalData": {
-      "headersOnly": true
+      "headersOnly": true,
+      "branchName": "version-v0.4.4"
     }
   },
   "dependencies": [

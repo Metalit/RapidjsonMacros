@@ -32,7 +32,7 @@ namespace rapidjson_macros_auto {
             throw JSONException(GetNameString(jsonName) + "." + e.what());
         }
     }
-    template<class T, with_constructible<T> D>
+    template<class T, with_constructible<T> D = T>
     void Deserialize(T& var, auto const& jsonName, D const& defaultValue, rapidjson::Value const& jsonValue) {
         auto fallback = [&var, &defaultValue]() {
             var = defaultValue;
@@ -90,7 +90,7 @@ namespace rapidjson_macros_auto {
             }
         }
     }
-    template<class T, with_constructible<std::vector<T>> D>
+    template<class T, with_constructible<std::vector<T>> D = T>
     void Deserialize(std::vector<T>& var, auto const& jsonName, D const& defaultValue, rapidjson::Value const& jsonValue) {
         auto fallback = [&var, &defaultValue]() {
             var = defaultValue;
@@ -161,7 +161,7 @@ namespace rapidjson_macros_auto {
             }
         }
     }
-    template<class T, with_constructible<StringKeyedMap<T>> D>
+    template<class T, with_constructible<StringKeyedMap<T>> D = T>
     void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, D const& defaultValue, rapidjson::Value const& jsonValue) {
         auto fallback = [&var, &defaultValue]() {
             var = defaultValue;

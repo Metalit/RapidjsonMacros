@@ -81,6 +81,8 @@ namespace rapidjson_macros_auto {
         auto& value = GetMember(jsonValue, jsonName, fallback);
         if(!value.IsArray())
             return fallback();
+        if(!var)
+            var.emplace();
         for(auto it = value.Begin(); it != value.End(); ++it) {
             auto& inst = var->emplace_back(NewType(var));
             try {
@@ -90,7 +92,7 @@ namespace rapidjson_macros_auto {
             }
         }
     }
-    template<class T, with_constructible<std::vector<T>> D = T>
+    template<class T, with_constructible<std::vector<T>> D = std::vector<T>>
     void Deserialize(std::vector<T>& var, auto const& jsonName, D const& defaultValue, rapidjson::Value const& jsonValue) {
         auto fallback = [&var, &defaultValue]() {
             var = defaultValue;
@@ -98,6 +100,7 @@ namespace rapidjson_macros_auto {
         auto& value = GetMember(jsonValue, jsonName, fallback);
         if(!value.IsArray())
             return fallback();
+        var.clear();
         for(auto it = value.Begin(); it != value.End(); ++it) {
             auto& inst = var.emplace_back(NewType(var));
             try {
@@ -152,6 +155,8 @@ namespace rapidjson_macros_auto {
         auto& value = GetMember(jsonValue, jsonName, fallback);
         if(!value.IsObject())
             return fallback();
+        if(!var)
+            var.emplace();
         for(auto& member : value.GetObject()) {
             auto& inst = var[member.name.GetString()] = NewType(var);
             try {
@@ -161,7 +166,7 @@ namespace rapidjson_macros_auto {
             }
         }
     }
-    template<class T, with_constructible<StringKeyedMap<T>> D = T>
+    template<class T, with_constructible<StringKeyedMap<T>> D = StringKeyedMap<T>>
     void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, D const& defaultValue, rapidjson::Value const& jsonValue) {
         auto fallback = [&var, &defaultValue]() {
             var = defaultValue;
@@ -169,6 +174,7 @@ namespace rapidjson_macros_auto {
         auto& value = GetMember(jsonValue, jsonName, fallback);
         if(!value.IsObject())
             return fallback();
+        var.clear();
         for(auto& member : value.GetObject()) {
             auto& inst = var[member.name.GetString()] = NewType(var);
             try {

@@ -13,7 +13,7 @@ namespace rapidjson_macros_auto {
 #pragma region simple
     template<class T>
     void Deserialize(T& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
-        auto&& [value, failed] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
+        auto&& [value, success] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         try {
             DeserializeValue(value, var, THROW_TYPE_EXCEPTION_FALLBACK(jsonValue, var));
         } catch(std::exception const& e) {
@@ -25,8 +25,8 @@ namespace rapidjson_macros_auto {
         auto fallback = [&var]() {
             var = std::nullopt;
         };
-        auto&& [value, failed] = GetMember(jsonValue, jsonName, fallback);
-        if(failed)
+        auto&& [value, success] = GetMember(jsonValue, jsonName, fallback);
+        if(!success)
             return;
         try {
             if(!DeserializeValue(value, var, fallback))
@@ -40,8 +40,8 @@ namespace rapidjson_macros_auto {
         auto fallback = [&var, &defaultValue]() {
             var = defaultValue;
         };
-        auto&& [value, failed] = GetMember(jsonValue, jsonName, fallback);
-        if(failed)
+        auto&& [value, success] = GetMember(jsonValue, jsonName, fallback);
+        if(!success)
             return;
         try {
             if(!DeserializeValue(value, var, fallback))
@@ -67,7 +67,7 @@ namespace rapidjson_macros_auto {
 #pragma region vector
     template<class T>
     void Deserialize(std::vector<T>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
-        auto&& [value, failed] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
+        auto&& [value, success] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         if(!value.IsArray())
             throw JSONException(GetNameString(jsonName) + "." TYPE_EXCEPTION_STRING(jsonValue, var));
         for(auto it = value.Begin(); it != value.End(); ++it) {
@@ -84,8 +84,8 @@ namespace rapidjson_macros_auto {
         auto fallback = [&var]() {
             var = std::nullopt;
         };
-        auto&& [value, failed] = GetMember(jsonValue, jsonName, fallback);
-        if(failed)
+        auto&& [value, success] = GetMember(jsonValue, jsonName, fallback);
+        if(!success)
             return;
         if(!value.IsArray())
             return fallback();
@@ -106,8 +106,8 @@ namespace rapidjson_macros_auto {
         auto fallback = [&var, &defaultValue]() {
             var = defaultValue;
         };
-        auto&& [value, failed] = GetMember(jsonValue, jsonName, fallback);
-        if(failed)
+        auto&& [value, success] = GetMember(jsonValue, jsonName, fallback);
+        if(!success)
             return;
         if(!value.IsArray())
             return fallback();
@@ -147,7 +147,7 @@ namespace rapidjson_macros_auto {
 #pragma region map
     template<class T>
     void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
-        auto&& [value, failed] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
+        auto&& [value, success] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         if(!value.IsObject())
             throw JSONException(GetNameString(jsonName) + "." TYPE_EXCEPTION_STRING(jsonValue, var));
         for(auto& member : value.GetObject()) {
@@ -164,8 +164,8 @@ namespace rapidjson_macros_auto {
         auto fallback = [&var]() {
             var = std::nullopt;
         };
-        auto&& [value, failed] = GetMember(jsonValue, jsonName, fallback);
-        if(failed)
+        auto&& [value, success] = GetMember(jsonValue, jsonName, fallback);
+        if(!success)
             return;
         if(!value.IsObject())
             return fallback();
@@ -186,8 +186,8 @@ namespace rapidjson_macros_auto {
         auto fallback = [&var, &defaultValue]() {
             var = defaultValue;
         };
-        auto&& [value, failed] = GetMember(jsonValue, jsonName, fallback);
-        if(failed)
+        auto&& [value, success] = GetMember(jsonValue, jsonName, fallback);
+        if(!success)
             return;
         if(!value.IsObject())
             return fallback();

@@ -4,12 +4,13 @@
 
 #include <span>
 #include <sstream>
+#include <tuple>
 
 namespace rapidjson_macros_serialization {
 
     template<class T, rapidjson_macros_types::callable F>
     requires std::is_constructible_v<std::string, T>
-    inline rapidjson::Value const& GetMember(rapidjson::Value const& jsonObject, T const& search, F const& onNotFound) {
+    inline std::tuple<rapidjson::Value const&, bool> GetMember(rapidjson::Value const& jsonObject, T const& search, F const& onNotFound) {
         if(!jsonObject.IsObject()) {
             std::stringstream exc{};
             exc << " was an unexpected type (";
@@ -19,14 +20,14 @@ namespace rapidjson_macros_serialization {
         }
         auto iter = jsonObject.FindMember(search);
         if(iter != jsonObject.MemberEnd())
-            return iter->value;
+            return {iter->value, true};
         onNotFound();
-        return jsonObject;
+        return {jsonObject, false};
     }
 
     template<class T, rapidjson_macros_types::callable F>
     requires std::is_constructible_v<std::string, T>
-    inline rapidjson::Value const& GetMember(rapidjson::Value const& jsonObject, std::vector<T> const& search, F const& onNotFound) {
+    inline std::tuple<rapidjson::Value const&, bool> GetMember(rapidjson::Value const& jsonObject, std::vector<T> const& search, F const& onNotFound) {
         if(!jsonObject.IsObject()) {
             std::stringstream exc{};
             exc << " was an unexpected type (";
@@ -37,10 +38,10 @@ namespace rapidjson_macros_serialization {
         for(auto& name : search) {
             auto iter = jsonObject.FindMember(name);
             if(iter != jsonObject.MemberEnd())
-                return iter->value;
+                return {iter->value, true};
         }
         onNotFound();
-        return jsonObject;
+        return {jsonObject, false};
     }
 
     template<class J, class T>
@@ -93,7 +94,7 @@ namespace rapidjson_macros_serialization {
     }
 
     template<class T, rapidjson_macros_types::callable F>
-    void DeserializeValue(rapidjson::Value const& value, T& variable, F const& onWrongType) {
+    bool DeserializeValue(rapidjson::Value const& value, T& variable, F const& onWrongType) {
         if constexpr(JSONClassDerived<rapidjson_macros_types::maybe_optional_t<T>>) {
             if constexpr(rapidjson_macros_types::is_optional<T>) {
                 if(!variable.has_value())
@@ -102,10 +103,13 @@ namespace rapidjson_macros_serialization {
             } else
                 variable.Deserialize(value);
         } else {
-            if (!rapidjson_macros_types::GetIsType(value, variable))
-                return onWrongType();
+            if (!rapidjson_macros_types::GetIsType(value, variable)) {
+                onWrongType();
+                return false;
+            }
             variable = rapidjson_macros_types::GetValueType(value, variable);
         }
+        return true;
     }
 
     template<class T>

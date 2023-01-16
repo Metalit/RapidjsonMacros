@@ -2,8 +2,8 @@
 
 #include "../shared/serialization.hpp"
 
-#define TYPE_EXCEPTION_STRING " was an unexpected type (" + JsonTypeName(jsonValue) + "), type expected was: " + CppTypeName(var)
-#define THROW_TYPE_EXCEPTION_FALLBACK [&jsonValue, &var]() { throw JSONException(TYPE_EXCEPTION_STRING); }
+#define TYPE_EXCEPTION_STRING(json, cpp) " was an unexpected type (" + JsonTypeName(json) + "), type expected was: " + CppTypeName(cpp)
+#define THROW_TYPE_EXCEPTION_FALLBACK(json, cpp) [&jsonRef = json, &cppRef = cpp]() { throw JSONException(TYPE_EXCEPTION_STRING(jsonRef, cppRef)); }
 #define THROW_NOT_FOUND_EXCEPTION_FALLBACK [&jsonName]() { throw JSONException(GetNameString(jsonName) + " was not found"); }
 
 namespace rapidjson_macros_auto {
@@ -15,7 +15,7 @@ namespace rapidjson_macros_auto {
     void Deserialize(T& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
         auto&& [value, failed] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         try {
-            DeserializeValue(value, var, THROW_TYPE_EXCEPTION_FALLBACK);
+            DeserializeValue(value, var, THROW_TYPE_EXCEPTION_FALLBACK(jsonValue, var));
         } catch(std::exception const& e) {
             throw JSONException(GetNameString(jsonName) + "." + e.what());
         }
@@ -69,11 +69,11 @@ namespace rapidjson_macros_auto {
     void Deserialize(std::vector<T>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
         auto&& [value, failed] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         if(!value.IsArray())
-            throw JSONException(GetNameString(jsonName) + "." TYPE_EXCEPTION_STRING);
+            throw JSONException(GetNameString(jsonName) + "." TYPE_EXCEPTION_STRING(jsonValue, var));
         for(auto it = value.Begin(); it != value.End(); ++it) {
             auto& inst = var.emplace_back(NewType(var));
             try {
-                DeserializeValue(*it, inst, THROW_TYPE_EXCEPTION_FALLBACK);
+                DeserializeValue(*it, inst, THROW_TYPE_EXCEPTION_FALLBACK(*it, inst));
             } catch(std::exception const& e) {
                 throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]." + e.what());
             }
@@ -149,11 +149,11 @@ namespace rapidjson_macros_auto {
     void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
         auto&& [value, failed] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         if(!value.IsObject())
-            throw JSONException(GetNameString(jsonName) + "." TYPE_EXCEPTION_STRING);
+            throw JSONException(GetNameString(jsonName) + "." TYPE_EXCEPTION_STRING(jsonValue, var));
         for(auto& member : value.GetObject()) {
             auto& inst = var[member.name.GetString()] = NewType(var);
             try {
-                DeserializeValue(member.value, inst, THROW_TYPE_EXCEPTION_FALLBACK);
+                DeserializeValue(member.value, inst, THROW_TYPE_EXCEPTION_FALLBACK(member.value, inst));
             } catch(std::exception const& e) {
                 throw JSONException(GetNameString(jsonName) + "[" + member.name.GetString() + "]." + e.what());
             }

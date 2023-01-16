@@ -175,7 +175,7 @@ class TypeOptions : public JSONClass {
 
         template<typename T>
         requires (std::is_convertible_v<Ts, T> || ...)
-        std::optional<T> GetValue() {
+        std::optional<T> GetValue() const {
             if(storedValue.document.Is<T>())
                 return storedValue.document.Get<T>();
             return std::nullopt;

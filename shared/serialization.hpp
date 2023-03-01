@@ -6,6 +6,13 @@
 #include <sstream>
 #include <tuple>
 
+namespace rapidjson_macros_auto {
+    template<class T>
+    inline void ForwardToDeserialize(T& var, auto const& jsonName, rapidjson::Value const& jsonValue);
+    template<class T>
+    inline void ForwardToSerialize(T const& var, auto const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);
+}
+
 namespace rapidjson_macros_serialization {
 
     template<class T, rapidjson_macros_types::callable F>
@@ -44,6 +51,11 @@ namespace rapidjson_macros_serialization {
         return {jsonObject, false};
     }
 
+    template<rapidjson_macros_types::callable F>
+    inline std::tuple<rapidjson::Value const&, bool> GetMember(rapidjson::Value const& jsonObject, rapidjson_macros_types::SelfValueType const& search, F const& onNotFound) {
+        return {jsonObject, true};
+    }
+
     template<class J, class T>
     requires std::is_constructible_v<std::string, T> && std::is_same_v<rapidjson::Value, std::remove_const_t<J>>
     void RemoveMember(J& jsonObject, T const& search) {
@@ -79,6 +91,10 @@ namespace rapidjson_macros_serialization {
         return ret.str();
     }
 
+    std::string GetNameString(rapidjson_macros_types::SelfValueType const& search) {
+        return "{unnamed}";
+    }
+
     template<class T>
     requires std::is_constructible_v<std::string, T>
     std::string GetDefaultName(T const& search) {
@@ -102,28 +118,34 @@ namespace rapidjson_macros_serialization {
                 variable->Deserialize(value);
             } else
                 variable.Deserialize(value);
-        } else {
+        } else if constexpr(JSONBasicType<rapidjson_macros_types::maybe_optional_t<T>>) {
             if (!rapidjson_macros_types::GetIsType(value, variable)) {
                 onWrongType();
                 return false;
             }
             variable = rapidjson_macros_types::GetValueType(value, variable);
-        }
+        } else
+            rapidjson_macros_auto::ForwardToDeserialize(variable, rapidjson_macros_types::SelfValueType(), value);
         return true;
     }
 
     template<class T>
-    rapidjson::Value SerializeValue(const T& variable, rapidjson::Document::AllocatorType& allocator) {
-        if constexpr(JSONClassDerived<rapidjson_macros_types::maybe_optional_t<T>>) {
+    rapidjson::Value SerializeValue(T const& variable, rapidjson::Document::AllocatorType& allocator) {
+        using real_t = std::decay_t<decltype(variable)>; // fixes issues with const for char arrays
+        if constexpr(JSONClassDerived<rapidjson_macros_types::maybe_optional_t<real_t>>) {
             if constexpr(rapidjson_macros_types::is_optional<T>)
                 return variable->Serialize(allocator);
             else
                 return variable.Serialize(allocator);
-        } else {
+        } else if constexpr(JSONBasicType<rapidjson_macros_types::maybe_optional_t<real_t>>) {
             if constexpr(rapidjson_macros_types::is_optional<T>)
                 return rapidjson_macros_types::CreateJSONValue(variable.value(), allocator);
             else
                 return rapidjson_macros_types::CreateJSONValue(variable, allocator);
+        } else {
+            rapidjson::Value newValue(rapidjson_macros_types::container_t<rapidjson_macros_types::maybe_optional_t<real_t>>);
+            rapidjson_macros_auto::ForwardToSerialize(variable, rapidjson_macros_types::SelfValueType(), newValue, allocator);
+            return newValue;
         }
     }
 

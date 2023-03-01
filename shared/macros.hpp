@@ -146,17 +146,27 @@ class _JSONValueAdder_##name { \
 // multiple candidate names can be used for deserialization, and the first name will be used for serialization
 #define NAME_OPTS(...) std::vector({__VA_ARGS__})
 
-// declare a class that can accept multiple non-class types, priority determined by order
+// declare a class that can accept multiple types
 #pragma region TypeOptions<types...>
 template<typename... Ts>
 class TypeOptions : public JSONClass {
+    static_assert(rapidjson_macros_types::all_unique<Ts...>, "All template arguments of TypeOptions must be unique");
     private:
+        template<typename T>
+        static bool IsType(rapidjson::Value const& jsonValue, T&& var = T()) {
+            try {
+                rapidjson_macros_auto::Deserialize(var, rapidjson_macros_types::SelfValueType(), jsonValue);
+                return true;
+            } catch (std::exception const& e) {
+                return false;
+            }
+        }
         rapidjson_macros_types::CopyableValue storedValue;
         template<typename C, typename... Cs>
         static bool CheckValueWithTypes(rapidjson::Value const& jsonValue) {
             if constexpr(sizeof...(Cs) > 0)
-                return jsonValue.Is<C>() || CheckValueWithTypes<Cs...>(jsonValue);
-            return jsonValue.Is<C>();
+                return IsType<C>(jsonValue) || CheckValueWithTypes<Cs...>(jsonValue);
+            return IsType<C>(jsonValue);
         }
     public:
         void Deserialize(rapidjson::Value const& jsonValue) {
@@ -175,16 +185,22 @@ class TypeOptions : public JSONClass {
 
         template<typename T>
         requires (std::is_convertible_v<Ts, T> || ...)
+        bool Is() const {
+            return IsType<T>(storedValue.document);
+        }
+        template<typename T>
+        requires (std::is_convertible_v<Ts, T> || ...)
         std::optional<T> GetValue() const {
-            if(storedValue.document.Is<T>())
-                return storedValue.document.Get<T>();
-            return std::nullopt;
+            T ret;
+            if(!IsType<T>(storedValue.document, ret))
+                return std::nullopt;
+            rapidjson_macros_auto::Deserialize(ret, rapidjson_macros_types::SelfValueType(), storedValue.document);
+            return ret;
         }
         template<typename T>
         requires (std::is_convertible_v<T, Ts> || ...)
         void SetValue(T&& value) {
-            using TypeHelper = rapidjson::internal::TypeHelper<rapidjson::Value, std::decay_t<T>>;
-            TypeHelper::Set(storedValue.document, value, storedValue.document.GetAllocator());
+            storedValue = rapidjson_macros_serialization::SerializeValue(value, storedValue.document.GetAllocator());
         }
         template<typename T>
         requires (std::is_convertible_v<T, Ts> || ...)

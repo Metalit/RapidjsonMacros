@@ -7,6 +7,10 @@
 Logger& getLogger();
 
 namespace RapidjsonMacros {
+    DECLARE_JSON_CLASS(SmallerSubclass,
+        NAMED_VALUE(int, Int, "")
+    )
+
     DECLARE_JSON_CLASS(SmallSubclass,
         VALUE_DEFAULT(double, DoubleValue, 1.0 / 2.5)
         VALUE(std::vector<std::string>, StringVector)
@@ -45,5 +49,8 @@ namespace RapidjsonMacros {
         MAP(std::string, Map)
         using IntOrFloat = TypeOptions<int, float>;
         NAMED_VALUE(IntOrFloat, FlexibleValue, "Give me an int or a float!")
+        VALUE(std::vector<std::vector<int>>, Vector2D)
+        using MoreTypes = TypeOptions<bool, float, std::vector<int>, SmallerSubclass>;
+        VALUE(MoreTypes, SuperFlexibleValue)
     )
 }

@@ -44,7 +44,7 @@ extern "C" void setup(ModInfo& info) {
     testClass.IntVector.emplace_back(9);
 
     testClass.Subclass.SBDValue = 3.14;
-    testClass.Subclass.SBDValue = true;
+    testClass.Subclass.SBDValue.SetValue(true);
     testClass.Subclass.SBDValue = "string";
     testClass.Subclass.FloatValue = -1.1;
 
@@ -54,7 +54,17 @@ extern "C" void setup(ModInfo& info) {
     testClass.SubclassVector[1].IntMap["two"] = 1;
     testClass.SubclassVector[2].IntMap["three"] = 2;
 
+    testClass.Vector2D.push_back({(int) testClass.Vector2D.size(), (int) testClass.Vector2D.size() + 1});
+
+    bool isFloat = testClass.SuperFlexibleValue.Is<float>();
+    if(isFloat) {
+        auto value = RapidjsonMacros::SmallerSubclass();
+        value.Int = 1;
+        testClass.SuperFlexibleValue.SetValue(value);
+    } else
+        testClass.SuperFlexibleValue = 0;
+
     WriteToFile(GetConfigPath(), testClass);
 
-    getLogger().info("Completed setup!");
+    getLogger().info("Completed test!");
 }

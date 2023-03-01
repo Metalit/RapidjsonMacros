@@ -24,7 +24,7 @@ class JSONClass {
 };
 
 template<class T>
-concept JSONClassDerived = std::is_base_of_v<JSONClass, T>;
+concept JSONClassDerived = std::is_base_of_v<JSONClass, std::decay_t<T>>;
 
 template<class T>
 concept JSONBasicType = requires(T t) { rapidjson::internal::TypeHelper<rapidjson::Value, std::decay_t<T>>::Is; };
@@ -50,6 +50,27 @@ namespace rapidjson_macros_types {
 
     template<class T>
     using maybe_optional_t = typename maybe_optional_impl<is_optional<T>, T>::type;
+
+    template <class T, class U, class... Ts>
+    struct uniq_impl {
+        static constexpr bool value = !std::is_same_v<T, U> && (!std::is_same_v<T, Ts> && ...) && uniq_impl<U, Ts...>::value;
+    };
+    template <class T, class U>
+    struct uniq_impl<T, U> {
+        static constexpr bool value = !std::is_same_v<T, U>;
+    };
+
+    template <class... Ts>
+    concept all_unique = uniq_impl<Ts...>::value;
+
+    template<class T>
+    inline constexpr rapidjson::Type container_t = rapidjson::kObjectType;
+    template<class T>
+    inline constexpr rapidjson::Type container_t<std::vector<T>> = rapidjson::kArrayType;
+    template<class T>
+    inline constexpr rapidjson::Type container_t<StringKeyedMap<T>> = rapidjson::kObjectType;
+
+    struct SelfValueType {};
 
     class CopyableValue {
         public:
@@ -122,6 +143,10 @@ namespace rapidjson_macros_types {
     template<std::size_t N = 0>
     inline rapidjson::Value::StringRefType GetJSONString(const char (&string)[N], rapidjson::Document::AllocatorType& allocator) {
         return rapidjson::Value::StringRefType(string);
+    }
+    template<std::size_t N = 0>
+    inline SelfValueType GetJSONString(const SelfValueType& string, rapidjson::Document::AllocatorType& allocator) {
+        return string;
     }
 
     template<class T>

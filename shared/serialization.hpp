@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../shared/types.hpp"
+#include "./types.hpp"
 
 #include <span>
 #include <sstream>
@@ -91,7 +91,7 @@ namespace rapidjson_macros_serialization {
         return ret.str();
     }
 
-    std::string GetNameString(rapidjson_macros_types::SelfValueType const& search) {
+    inline std::string GetNameString(rapidjson_macros_types::SelfValueType const& search) {
         return "{unnamed}";
     }
 

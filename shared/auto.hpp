@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../shared/serialization.hpp"
+#include "./serialization.hpp"
 
 #define TYPE_EXCEPTION_STRING(json, cpp) " was an unexpected type (" + JsonTypeName(json) + "), type expected was: " + CppTypeName(cpp)
 #define THROW_TYPE_EXCEPTION_FALLBACK(json, cpp) [&jsonRef = json, &cppRef = cpp]() { throw JSONException(TYPE_EXCEPTION_STRING(jsonRef, cppRef)); }

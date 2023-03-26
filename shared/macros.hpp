@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../shared/auto.hpp"
+#include "./auto.hpp"
 
 // declare a class with serialization and deserialization support using the Read and Write functions
 #pragma region DECLARE_JSON_CLASS(name, fields)
@@ -153,13 +153,18 @@ class TypeOptions : public JSONClass {
     static_assert(rapidjson_macros_types::all_unique<Ts...>, "All template arguments of TypeOptions must be unique");
     private:
         template<typename T>
-        static bool IsType(rapidjson::Value const& jsonValue, T&& var = T()) {
+        static bool IsType(rapidjson::Value const& jsonValue, T& var) {
             try {
                 rapidjson_macros_auto::Deserialize(var, rapidjson_macros_types::SelfValueType(), jsonValue);
                 return true;
             } catch (std::exception const& e) {
                 return false;
             }
+        }
+        template<typename T>
+        static bool IsType(rapidjson::Value const& jsonValue) {
+            T var;
+            return IsType<T>(jsonValue, var);
         }
         rapidjson_macros_types::CopyableValue storedValue;
         template<typename C, typename... Cs>
@@ -194,13 +199,13 @@ class TypeOptions : public JSONClass {
             T ret;
             if(!IsType<T>(storedValue.document, ret))
                 return std::nullopt;
-            rapidjson_macros_auto::Deserialize(ret, rapidjson_macros_types::SelfValueType(), storedValue.document);
             return ret;
         }
         template<typename T>
         requires (std::is_convertible_v<T, Ts> || ...)
         void SetValue(T&& value) {
-            storedValue = rapidjson_macros_serialization::SerializeValue(value, storedValue.document.GetAllocator());
+            rapidjson_macros_types::first_convertible_t<std::remove_reference_t<T>, Ts...> const& casted = value;
+            storedValue = rapidjson_macros_serialization::SerializeValue(casted, storedValue.document.GetAllocator());
         }
         template<typename T>
         requires (std::is_convertible_v<T, Ts> || ...)

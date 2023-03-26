@@ -63,6 +63,18 @@ namespace rapidjson_macros_types {
     template <class... Ts>
     concept all_unique = uniq_impl<Ts...>::value;
 
+    template<class To, class U, class... Ts>
+    struct first_convertible_impl {
+        using type = std::conditional_t<std::is_convertible_v<U, To>, U, typename first_convertible_impl<To, Ts...>::type>;
+    };
+    template<class To, class U>
+    struct first_convertible_impl<To, U> {
+        using type = std::conditional_t<std::is_convertible_v<U, To>, U, To>;
+    };
+
+    template <class To, class... Ts>
+    using first_convertible_t = typename first_convertible_impl<To, Ts...>::type;
+
     template<class T>
     inline constexpr rapidjson::Type container_t = rapidjson::kObjectType;
     template<class T>

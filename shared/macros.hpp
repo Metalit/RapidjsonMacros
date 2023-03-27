@@ -148,9 +148,9 @@ class _JSONValueAdder_##name { \
 
 // declare a class that can accept multiple types
 #pragma region TypeOptions<types...>
-template<typename... Ts>
+template<typename TDefault, typename... Ts>
 class TypeOptions : public JSONClass {
-    static_assert(rapidjson_macros_types::all_unique<Ts...>, "All template arguments of TypeOptions must be unique");
+    static_assert(rapidjson_macros_types::all_unique<TDefault, Ts...>, "All template arguments of TypeOptions must be unique");
     private:
         template<typename T>
         static bool IsType(rapidjson::Value const& jsonValue, T& var) {
@@ -175,10 +175,10 @@ class TypeOptions : public JSONClass {
         }
     public:
         void Deserialize(rapidjson::Value const& jsonValue) {
-            if(!CheckValueWithTypes<Ts...>(jsonValue)) {
+            if(!CheckValueWithTypes<TDefault, Ts...>(jsonValue)) {
                 throw JSONException(" was an unexpected type (" +
                 rapidjson_macros_types::JsonTypeName(jsonValue) + "), type expected was: " +
-                rapidjson_macros_types::CppTypeName(TypeOptions<Ts...>()));
+                rapidjson_macros_types::CppTypeName(TypeOptions<TDefault, Ts...>()));
             } else
                 storedValue = jsonValue;
         }
@@ -189,12 +189,12 @@ class TypeOptions : public JSONClass {
         }
 
         template<typename T>
-        requires (std::is_convertible_v<Ts, T> || ...)
+        requires (std::is_convertible_v<TDefault, T> || (std::is_convertible_v<Ts, T> || ...))
         bool Is() const {
             return IsType<T>(storedValue.document);
         }
         template<typename T>
-        requires (std::is_convertible_v<Ts, T> || ...)
+        requires (std::is_convertible_v<TDefault, T> || (std::is_convertible_v<Ts, T> || ...))
         std::optional<T> GetValue() const {
             T ret;
             if(!IsType<T>(storedValue.document, ret))
@@ -202,23 +202,23 @@ class TypeOptions : public JSONClass {
             return ret;
         }
         template<typename T>
-        requires (std::is_convertible_v<T, Ts> || ...)
+        requires (std::is_convertible_v<T, TDefault> || (std::is_convertible_v<T, Ts> || ...))
         void SetValue(T&& value) {
-            rapidjson_macros_types::first_convertible_t<std::remove_reference_t<T>, Ts...> const& casted = value;
+            rapidjson_macros_types::first_convertible_t<std::remove_reference_t<T>, TDefault, Ts...> const& casted = value;
             storedValue = rapidjson_macros_serialization::SerializeValue(casted, storedValue.document.GetAllocator());
         }
         template<typename T>
-        requires (std::is_convertible_v<T, Ts> || ...)
-        TypeOptions<Ts...>& operator=(T&& other) {
+        requires (std::is_convertible_v<T, TDefault> || (std::is_convertible_v<T, Ts> || ...))
+        TypeOptions<TDefault, Ts...>& operator=(T&& other) {
             SetValue(other);
             return *this;
         }
-        TypeOptions() = default;
+        TypeOptions() { SetValue(TDefault()); };
         template<typename T>
-        requires (std::is_convertible_v<T, Ts> || ...)
+        requires (std::is_convertible_v<T, TDefault> || (std::is_convertible_v<T, Ts> || ...))
         TypeOptions(T value) {
             SetValue(value);
         }
-        TypeOptions(TypeOptions<Ts...> const& value) = default;
+        TypeOptions(TypeOptions<TDefault, Ts...> const& value) = default;
 };
 #pragma endregion

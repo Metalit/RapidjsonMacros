@@ -152,9 +152,14 @@ namespace rapidjson_macros_serialization {
     template<class S>
     void DeserializeInternal(S* self, rapidjson::Value const& jsonValue) {
         if constexpr(S::keepExtraFields) {
-            self->extraFields = jsonValue;
-            for(auto& method : S::deserializers())
-                method(self, self->extraFields->document);
+            try {
+                self->extraFields = jsonValue;
+                for(auto& method : S::deserializers())
+                    method(self, self->extraFields->document);
+            } catch(const std::exception& _) {
+                self->extraFields->Clear();
+                throw;
+            }
         } else {
             for(auto& method : S::deserializers())
                 method(self, jsonValue);

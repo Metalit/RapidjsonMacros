@@ -90,18 +90,23 @@ namespace rapidjson_macros_types {
         // constructors
         CopyableValue() = default;
         CopyableValue(const rapidjson::Value& val) {
+            Clear();
             document.CopyFrom(val, document.GetAllocator());
         }
         CopyableValue(const CopyableValue& copyable) : CopyableValue(copyable.document) {}
         // assignment
         void operator=(const rapidjson::Value& val) {
+            Clear();
             document.CopyFrom(val, document.GetAllocator());
         }
         void operator=(const CopyableValue& copyable) {
+            Clear();
             document.CopyFrom(copyable.document, document.GetAllocator());
         }
         // comparison
         bool operator==(const CopyableValue&) const { return true; };
+        // clear helper
+        void Clear() { if(document.IsObject()) document.RemoveAllMembers(); }
     };
 
     template<class T>

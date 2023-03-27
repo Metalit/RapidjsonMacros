@@ -16,8 +16,8 @@ namespace rapidjson_macros_auto {
         auto&& [value, success] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         try {
             DeserializeValue(value, var, THROW_TYPE_EXCEPTION_FALLBACK(jsonValue, var));
-        } catch(std::exception const& e) {
-            throw JSONException(GetNameString(jsonName) + "." + e.what());
+        } catch(JSONException const& e) {
+            throw JSONException(GetNameString(jsonName) + e.what());
         }
     }
     template<class T>
@@ -31,8 +31,8 @@ namespace rapidjson_macros_auto {
         try {
             if(!DeserializeValue(value, var, fallback))
                 return;
-        } catch(std::exception const& e) {
-            throw JSONException(GetNameString(jsonName) + "." + e.what());
+        } catch(JSONException const& e) {
+            throw JSONException(GetNameString(jsonName) + e.what());
         }
     }
     template<class T, with_constructible<T> D = T>
@@ -46,8 +46,8 @@ namespace rapidjson_macros_auto {
         try {
             if(!DeserializeValue(value, var, fallback))
                 return;
-        } catch(std::exception const& e) {
-            throw JSONException(GetNameString(jsonName) + "." + e.what());
+        } catch(JSONException const& e) {
+            throw JSONException(GetNameString(jsonName) + e.what());
         }
     }
 
@@ -69,14 +69,14 @@ namespace rapidjson_macros_auto {
     void Deserialize(std::vector<T>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
         auto&& [value, success] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         if(!value.IsArray())
-            throw JSONException(GetNameString(jsonName) + "." TYPE_EXCEPTION_STRING(jsonValue, var));
+            throw JSONException(GetNameString(jsonName) + TYPE_EXCEPTION_STRING(jsonValue, var));
         var.clear();
         for(auto it = value.Begin(); it != value.End(); ++it) {
             auto& inst = var.emplace_back(NewType(var));
             try {
                 DeserializeValue(*it, inst, THROW_TYPE_EXCEPTION_FALLBACK(*it, inst));
-            } catch(std::exception const& e) {
-                throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]." + e.what());
+            } catch(JSONException const& e) {
+                throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]" + e.what());
             }
         }
     }
@@ -98,8 +98,8 @@ namespace rapidjson_macros_auto {
             try {
                 if(!DeserializeValue(*it, inst, fallback))
                     return;
-            } catch(std::exception const& e) {
-                throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]." + e.what());
+            } catch(JSONException const& e) {
+                throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]" + e.what());
             }
         }
     }
@@ -119,8 +119,8 @@ namespace rapidjson_macros_auto {
             try {
                 if(!DeserializeValue(*it, inst, fallback))
                     return;
-            } catch(std::exception const& e) {
-                throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]." + e.what());
+            } catch(JSONException const& e) {
+                throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]" + e.what());
             }
         }
     }
@@ -159,14 +159,14 @@ namespace rapidjson_macros_auto {
     void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
         auto&& [value, success] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         if(!value.IsObject())
-            throw JSONException(GetNameString(jsonName) + "." TYPE_EXCEPTION_STRING(jsonValue, var));
+            throw JSONException(GetNameString(jsonName) + TYPE_EXCEPTION_STRING(jsonValue, var));
         var.clear();
         for(auto& member : value.GetObject()) {
             auto& inst = var[member.name.GetString()] = NewType(var);
             try {
                 DeserializeValue(member.value, inst, THROW_TYPE_EXCEPTION_FALLBACK(member.value, inst));
-            } catch(std::exception const& e) {
-                throw JSONException(GetNameString(jsonName) + "[" + member.name.GetString() + "]." + e.what());
+            } catch(JSONException const& e) {
+                throw JSONException(GetNameString(jsonName) + "[" + member.name.GetString() + "]" + e.what());
             }
         }
     }
@@ -188,8 +188,8 @@ namespace rapidjson_macros_auto {
             try {
                 if(!DeserializeValue(member.value, inst, fallback))
                     return;
-            } catch(std::exception const& e) {
-                throw JSONException(GetNameString(jsonName) + "[" + member.name.GetString() + "]." + e.what());
+            } catch(JSONException const& e) {
+                throw JSONException(GetNameString(jsonName) + "[" + member.name.GetString() + "]" + e.what());
             }
         }
     }
@@ -209,8 +209,8 @@ namespace rapidjson_macros_auto {
             try {
                 if(!DeserializeValue(member.value, inst, fallback))
                     return;
-            } catch(std::exception const& e) {
-                throw JSONException(GetNameString(jsonName) + "[" + member.name.GetString() + "]." + e.what());
+            } catch(JSONException const& e) {
+                throw JSONException(GetNameString(jsonName) + "[" + member.name.GetString() + "]" + e.what());
             }
         }
     }

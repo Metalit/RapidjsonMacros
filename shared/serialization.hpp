@@ -75,16 +75,16 @@ namespace rapidjson_macros_serialization {
     template<class T>
     requires std::is_constructible_v<std::string, T>
     std::string GetNameString(T const& search) {
-        return search;
+        return std::string(".") + search;
     }
 
     template<class T>
     requires std::is_constructible_v<std::string, T>
     std::string GetNameString(std::vector<T> const& search) {
         if(search.size() == 0)
-            return "()";
+            return ".()";
         std::stringstream ret;
-        ret << "(" << search.front();
+        ret << ".(" << search.front();
         for(auto& name : std::span(search).subspan(1))
             ret << " or " << name;
         ret << ")";
@@ -92,7 +92,7 @@ namespace rapidjson_macros_serialization {
     }
 
     inline std::string GetNameString(rapidjson_macros_types::SelfValueType const& search) {
-        return "{unnamed}";
+        return "";
     }
 
     template<class T>
@@ -156,7 +156,7 @@ namespace rapidjson_macros_serialization {
                 self->extraFields = jsonValue;
                 for(auto& method : S::deserializers())
                     method(self, self->extraFields->document);
-            } catch(const std::exception& _) {
+            } catch(JSONException const& e) {
                 self->extraFields->Clear();
                 throw;
             }

@@ -157,7 +157,7 @@ class TypeOptions : public JSONClass {
             try {
                 rapidjson_macros_auto::Deserialize(var, rapidjson_macros_types::SelfValueType(), jsonValue);
                 return true;
-            } catch (std::exception const& e) {
+            } catch (JSONException const& e) {
                 return false;
             }
         }

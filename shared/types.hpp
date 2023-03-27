@@ -121,6 +121,11 @@ namespace rapidjson_macros_types {
         free(realname);
         return s;
     }
+    template<class T>
+    requires(std::is_convertible_v<T, std::string>)
+    inline std::string CppTypeName(const T& var) {
+        return "std::string";
+    }
     inline std::string JsonTypeName(rapidjson::Value const& jsonValue) {
         auto type = jsonValue.GetType();
         switch (type) {

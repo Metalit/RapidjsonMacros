@@ -72,6 +72,9 @@ namespace rapidjson_macros_serialization {
         }
     }
 
+    template<class J>
+    void RemoveMember(J& jsonObject, rapidjson_macros_types::SelfValueType const& search) {}
+
     template<class T>
     requires std::is_constructible_v<std::string, T>
     std::string GetNameString(T const& search) {
@@ -178,7 +181,7 @@ template<JSONClassDerived T>
 static void ReadFromString(std::string_view string, T& toDeserialize) {
     rapidjson::Document document;
     document.Parse(string.data());
-    if(document.HasParseError() || !document.IsObject())
+    if(document.HasParseError())
         throw JSONException("string could not be parsed as json");
 
     toDeserialize.Deserialize(document.GetObject());

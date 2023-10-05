@@ -1,5 +1,5 @@
 name: Publish QPM Package
-    
+
 on:
   push:
     tags:
@@ -8,14 +8,14 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v2
       name: Checkout
       with:
         submodules: true
         lfs: true
-    
+
     - name: Get QPM
       if: steps.cache-qpm.outputs.cache-hit != 'true'
       uses: dawidd6/action-download-artifact@v2
@@ -25,12 +25,12 @@ jobs:
         name: linux-qpm-rust
         path: QPM
         repo: RedBrumbler/QuestPackageManager-Rust
-      
+
     - name: QPM Collapse
       run: |
         chmod +x ./QPM/qpm-rust
         ./QPM/qpm-rust collapse
-    
+
     - name: QPM Dependencies Cache
       id: cache-qpm-deps
       uses: actions/cache@v2
@@ -43,11 +43,11 @@ jobs:
           ${{ runner.os }}-build-${{ env.cache-name }}-
           ${{ runner.os }}-build-
           ${{ runner.os }}-
-    
+
     - name: QPM Restore
       run: |
         ./QPM/qpm-rust restore
-    
+
     - name: List Post Restore
       run: |
         echo includes:
@@ -56,14 +56,14 @@ jobs:
         ls -la ${GITHUB_WORKSPACE}/extern/libs
         echo cache:
         ls -la $HOME/.local/share/QPM-Rust/cache
-    
+
     - name: Get Tag Version
       id: get_tag_version
       run: |
         echo ${GITHUB_REF#refs/tags/}
         echo ::set-output name=TAG::${GITHUB_REF#refs/tags/}
         echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/v}
-      
+
     - name: QPM Edit Version
       run: |
         ./QPM/qpm-rust package edit --version "${{ steps.get_tag_version.outputs.VERSION }}"
@@ -73,23 +73,23 @@ jobs:
       run: |
         git config user.name "Github Actions"
         git config user.email "<>"
-    
+
     - name: Commit Edit Version
       run: |
         git add ./qpm.json
         git commit -m "Update Version and post restore" --allow-empty
-    
+
     # Then, we want to use the commit we have just made, and force push our tag to that commit
     - name: Get Commit ID
       id: get_commit_id
       run: |
         echo `git rev-parse HEAD`
         echo ::set-output name=ID::`git rev-parse HEAD`
-    
+
     - name: Force create tag
       run: |
         git tag --force ${{ steps.get_tag_version.outputs.TAG }} ${{ steps.get_commid_id.outputs.ID }}
-    
+
     # Then, push, upload our artifacts, modify the config file to have soLink and debugSoLink
     - name: Create and push version specific branch
       env:
@@ -105,22 +105,22 @@ jobs:
       run: |
         git add qpm.json
         git commit -m "Updated qpm.json"
-      
+
     # Then, we want to use the commit we have just made, and force push our tag to that commit
     - name: Get Commit ID
       id: get_created_commit_id
       run: |
         echo `git rev-parse HEAD`
         echo ::set-output name=ID::`git rev-parse HEAD`
-      
+
     - name: Push New Commit and Tag
       run: |
         git push origin HEAD:version-${{ steps.get_tag_version.outputs.TAG }} --force
         git tag --force ${{ steps.get_tag_version.outputs.TAG }} ${{ steps.get_created_commit_id.outputs.ID }}
         git push --tags --force
-        
+
 #     - name: Merge this branch into whatever branch we were originally built off of.
 #       TODO
-        
+
     - name: QPM Publish
       run: ./QPM/qpm-rust publish "${{secrets.QPM_KEY}}"

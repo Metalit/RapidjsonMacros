@@ -188,18 +188,22 @@ static void ReadFromString(std::string_view string, T& toDeserialize) {
 }
 
 template<JSONClassDerived T>
-static inline bool WriteToFile(std::string_view path, const T& toSerialize) {
-    return writefile(path, WriteToString(toSerialize));
+static inline bool WriteToFile(std::string_view path, const T& toSerialize, bool pretty = false) {
+    return writefile(path, WriteToString(toSerialize, pretty));
 }
 
 template<JSONClassDerived T>
-static std::string WriteToString(const T& toSerialize) {
+static std::string WriteToString(const T& toSerialize, bool pretty = false) {
     rapidjson::Document document;
-    document.SetObject();
     toSerialize.Serialize(document.GetAllocator()).Swap(document);
 
     rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    document.Accept(writer);
+    if(pretty) {
+        rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+        document.Accept(writer);
+    } else {
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+        document.Accept(writer);
+    }
     return buffer.GetString();
 }

@@ -233,3 +233,41 @@ class TypeOptions : public JSONClass {
         TypeOptions(TypeOptions<TDefault, Ts...> const& value) = default;
 };
 #pragma endregion
+
+// allows the storing of unparsed json in a value, with utility methods to parse and set with other JSONClasses
+#pragma region UnparsedJSON
+class UnparsedJSON : public JSONClass {
+    public:
+        void Deserialize(rapidjson::Value const& jsonValue) {
+            storedValue = jsonValue;
+        }
+        rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const {
+            rapidjson::Value ret;
+            ret.CopyFrom(storedValue.document, allocator);
+            return ret;
+        }
+        template<JSONClassDerived T>
+        T Parse() {
+            T ret;
+            ret.Deserialize(storedValue.document);
+            return ret;
+        }
+        template<JSONClassDerived T>
+        void Set(T value) {
+            value.Serialize(storedValue.document.GetAllocator()).Swap(storedValue.document);
+        }
+        template<JSONClassDerived T>
+        UnparsedJSON& operator=(T&& other) {
+            Set(other);
+            return *this;
+        }
+        template<JSONClassDerived T>
+        UnparsedJSON(T value) {
+            Set(value);
+        }
+        UnparsedJSON() = default;
+        UnparsedJSON(UnparsedJSON const& value) = default;
+    private:
+        rapidjson_macros_types::CopyableValue storedValue;
+};
+#pragma endregion

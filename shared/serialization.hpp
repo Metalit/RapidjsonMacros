@@ -112,6 +112,10 @@ namespace rapidjson_macros_serialization {
         return search.front();
     }
 
+    inline std::string GetDefaultName(rapidjson_macros_types::SelfValueType const& search) {
+        return "";
+    }
+
     template<class T, rapidjson_macros_types::callable F>
     bool DeserializeValue(rapidjson::Value const& value, T& variable, F const& onWrongType) {
         if constexpr(JSONClassDerived<rapidjson_macros_types::maybe_optional_t<T>>) {
@@ -184,7 +188,7 @@ static void ReadFromString(std::string_view string, T& toDeserialize) {
     if(document.HasParseError())
         throw JSONException("string could not be parsed as json");
 
-    toDeserialize.Deserialize(document.GetObject());
+    toDeserialize.Deserialize(document);
 }
 
 template<JSONClassDerived T>

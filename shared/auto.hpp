@@ -53,14 +53,24 @@ namespace rapidjson_macros_auto {
 
     template<class T>
     void Serialize(T const& var, auto const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) {
-        auto name = GetJSONString(GetDefaultName(jsonName), allocator);
-        jsonObject.AddMember(name, SerializeValue(var, allocator), allocator);
+        constexpr bool addToExisting = std::is_same_v<decltype(jsonName), SelfValueType const&>;
+        auto serialized = SerializeValue(var, allocator);
+        if constexpr(!addToExisting) {
+            auto name = GetJSONString(GetDefaultName(jsonName), allocator);
+            jsonObject.AddMember(name, serialized, allocator);
+        } else
+            jsonObject.Swap(serialized);
     }
     template<class T>
     void Serialize(std::optional<T> const& var, auto const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) {
         if(!var.has_value()) return;
-        auto name = GetJSONString(GetDefaultName(jsonName), allocator);
-        jsonObject.AddMember(name, SerializeValue(var, allocator), allocator);
+        constexpr bool addToExisting = std::is_same_v<decltype(jsonName), SelfValueType const&>;
+        auto serialized = SerializeValue(var, allocator);
+        if constexpr(!addToExisting) {
+            auto name = GetJSONString(GetDefaultName(jsonName), allocator);
+            jsonObject.AddMember(name, serialized, allocator);
+        } else
+            jsonObject.Swap(serialized);
     }
 #pragma endregion
 

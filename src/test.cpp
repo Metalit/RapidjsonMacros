@@ -2,7 +2,7 @@
 
 #include "beatsaber-hook/shared/config/config-utils.hpp"
 
-static ModInfo modInfo;
+static modloader::ModInfo modInfo = {MOD_ID, VERSION, 0};
 
 RapidjsonMacros::TestClass testClass;
 RapidjsonMacros::TestClass testClass2;
@@ -17,10 +17,12 @@ std::string& GetConfigPath() {
     return configPath;
 }
 
-extern "C" void setup(ModInfo& info) {
+extern "C" void setup(CModInfo& info) {
     info.id = MOD_ID;
     info.version = VERSION;
-    modInfo = info;
+    info.version_long = 0;
+
+    modInfo.assign(info);
 
     if(!fileexists(GetConfigPath())) {
         if(!WriteToFile(GetConfigPath(), testClass))

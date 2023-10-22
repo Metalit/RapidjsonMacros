@@ -7,13 +7,14 @@
     "version": "1.0.0",
     "url": "https://github.com/Metalit/RapidjsonMacros",
     "additionalData": {
-      "headersOnly": true
+      "headersOnly": true,
+      "cmake": true
     }
   },
   "dependencies": [
     {
       "id": "beatsaber-hook",
-      "versionRange": ">=1.0.0<4.0.0",
+      "versionRange": "^4.0.0",
       "additionalData": {}
     }
   ],

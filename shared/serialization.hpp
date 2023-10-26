@@ -72,6 +72,9 @@ namespace rapidjson_macros_serialization {
         }
     }
 
+    template<class J>
+    void RemoveMember(J& jsonObject, rapidjson_macros_types::SelfValueType const& search) {}
+
     template<class T>
     requires std::is_constructible_v<std::string, T>
     std::string GetNameString(T const& search) {
@@ -107,6 +110,10 @@ namespace rapidjson_macros_serialization {
         if(search.size() == 0)
             return "";
         return search.front();
+    }
+
+    inline std::string GetDefaultName(rapidjson_macros_types::SelfValueType const& search) {
+        return "";
     }
 
     template<class T, rapidjson_macros_types::callable F>
@@ -178,25 +185,29 @@ template<JSONClassDerived T>
 static void ReadFromString(std::string_view string, T& toDeserialize) {
     rapidjson::Document document;
     document.Parse(string.data());
-    if(document.HasParseError() || !document.IsObject())
+    if(document.HasParseError())
         throw JSONException("string could not be parsed as json");
 
-    toDeserialize.Deserialize(document.GetObject());
+    toDeserialize.Deserialize(document);
 }
 
 template<JSONClassDerived T>
-static inline bool WriteToFile(std::string_view path, const T& toSerialize) {
-    return writefile(path, WriteToString(toSerialize));
+static inline bool WriteToFile(std::string_view path, const T& toSerialize, bool pretty = false) {
+    return writefile(path, WriteToString(toSerialize, pretty));
 }
 
 template<JSONClassDerived T>
-static std::string WriteToString(const T& toSerialize) {
+static std::string WriteToString(const T& toSerialize, bool pretty = false) {
     rapidjson::Document document;
-    document.SetObject();
     toSerialize.Serialize(document.GetAllocator()).Swap(document);
 
     rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    document.Accept(writer);
+    if(pretty) {
+        rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+        document.Accept(writer);
+    } else {
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+        document.Accept(writer);
+    }
     return buffer.GetString();
 }

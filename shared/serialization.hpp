@@ -192,6 +192,20 @@ static void ReadFromString(std::string_view string, T& toDeserialize) {
 }
 
 template<JSONClassDerived T>
+static inline T ReadFromFile(std::string_view path) {
+    T ret;
+    ReadFromFile(path, ret);
+    return ret;
+}
+
+template<JSONClassDerived T>
+static inline T ReadFromString(std::string_view path) {
+    T ret;
+    ReadFromString(path, ret);
+    return ret;
+}
+
+template<JSONClassDerived T>
 static inline bool WriteToFile(std::string_view path, const T& toSerialize, bool pretty = false) {
     return writefile(path, WriteToString(toSerialize, pretty));
 }

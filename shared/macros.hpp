@@ -247,7 +247,7 @@ class UnparsedJSON : public JSONClass {
             return ret;
         }
         template<JSONClassDerived T>
-        T Parse() {
+        T Parse() const {
             T ret;
             ret.Deserialize(storedValue.document);
             return ret;

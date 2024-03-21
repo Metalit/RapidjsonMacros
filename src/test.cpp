@@ -2,7 +2,12 @@
 
 #include "beatsaber-hook/shared/config/config-utils.hpp"
 
+// good enough, it's not like this is an actual mod
+#ifdef MODLOADER_FUNC
 static modloader::ModInfo modInfo = {MOD_ID, VERSION, 0};
+#else
+static ModInfo modInfo;
+#endif
 
 RapidjsonMacros::TestClass testClass;
 RapidjsonMacros::TestClass testClass2;
@@ -17,12 +22,19 @@ std::string& GetConfigPath() {
     return configPath;
 }
 
+#ifdef MODLOADER_FUNC
 extern "C" void setup(CModInfo& info) {
     info.id = MOD_ID;
     info.version = VERSION;
     info.version_long = 0;
 
     modInfo.assign(info);
+#else
+extern "C" void setup(ModInfo& info) {
+#endif
+    info.id = MOD_ID;
+    info.version = VERSION;
+    modInfo = info;
 
     if(!fileexists(GetConfigPath())) {
         if(!WriteToFile(GetConfigPath(), testClass))

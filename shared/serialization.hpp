@@ -118,14 +118,14 @@ namespace rapidjson_macros_serialization {
 
     template<class T, rapidjson_macros_types::callable F>
     bool DeserializeValue(rapidjson::Value const& value, T& variable, F const& onWrongType) {
-        if constexpr(JSONClassDerived<rapidjson_macros_types::maybe_optional_t<T>>) {
+        if constexpr(JSONClassDerived<rapidjson_macros_types::remove_optional_t<T>>) {
             if constexpr(rapidjson_macros_types::is_optional<T>) {
                 if(!variable.has_value())
                     variable.emplace();
                 variable->Deserialize(value);
             } else
                 variable.Deserialize(value);
-        } else if constexpr(JSONBasicType<rapidjson_macros_types::maybe_optional_t<T>>) {
+        } else if constexpr(JSONBasicType<rapidjson_macros_types::remove_optional_t<T>>) {
             if (!rapidjson_macros_types::GetIsType(value, variable)) {
                 onWrongType();
                 return false;
@@ -139,18 +139,18 @@ namespace rapidjson_macros_serialization {
     template<class T>
     rapidjson::Value SerializeValue(T const& variable, rapidjson::Document::AllocatorType& allocator) {
         using real_t = std::decay_t<decltype(variable)>; // fixes issues with const for char arrays
-        if constexpr(JSONClassDerived<rapidjson_macros_types::maybe_optional_t<real_t>>) {
+        if constexpr(JSONClassDerived<rapidjson_macros_types::remove_optional_t<real_t>>) {
             if constexpr(rapidjson_macros_types::is_optional<T>)
                 return variable->Serialize(allocator);
             else
                 return variable.Serialize(allocator);
-        } else if constexpr(JSONBasicType<rapidjson_macros_types::maybe_optional_t<real_t>>) {
+        } else if constexpr(JSONBasicType<rapidjson_macros_types::remove_optional_t<real_t>>) {
             if constexpr(rapidjson_macros_types::is_optional<T>)
                 return rapidjson_macros_types::CreateJSONValue(variable.value(), allocator);
             else
                 return rapidjson_macros_types::CreateJSONValue(variable, allocator);
         } else {
-            rapidjson::Value newValue(rapidjson_macros_types::container_t<rapidjson_macros_types::maybe_optional_t<real_t>>);
+            rapidjson::Value newValue(rapidjson_macros_types::container_t<rapidjson_macros_types::remove_optional_t<real_t>>);
             rapidjson_macros_auto::ForwardToSerialize(variable, rapidjson_macros_types::SelfValueType(), newValue, allocator);
             return newValue;
         }

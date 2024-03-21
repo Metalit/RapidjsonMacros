@@ -48,7 +48,7 @@ class name : public JSONClass { \
 // will most likely be run in the order of fields in your class definition
 // parameters available for the action:
 //    self: a pointer to the class instance
-//    jsonValue: the value the class being deserialized from
+//    jsonValue: the value the class is being deserialized from
 #pragma region DESERIALIZE_ACTION(id, body)
 #define DESERIALIZE_ACTION(uid, ...) \
 class _DeserializeAction_##uid { \
@@ -66,7 +66,7 @@ class _DeserializeAction_##uid { \
 // will most likely be run in the order of fields in your class definition
 // parameters available for the action:
 //    self: a pointer to the class instance
-//    jsonObject: the value the class being serialized to
+//    jsonObject: the value the class is being serialized to
 //    allocator: the allocator of the top level document being serialized to
 #pragma region SERIALIZE_ACTION(id, body)
 #define SERIALIZE_ACTION(uid, ...) \

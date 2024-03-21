@@ -44,12 +44,12 @@ namespace rapidjson_macros_types {
     concept is_optional = std::same_as<T, std::optional<typename T::value_type>>;
 
     template<bool B, class T>
-    struct maybe_optional_impl { using type = T; };
+    struct remove_optional_impl { using type = T; };
     template<class T>
-    struct maybe_optional_impl<true, T> { using type = typename T::value_type; };
+    struct remove_optional_impl<true, T> { using type = typename T::value_type; };
 
     template<class T>
-    using maybe_optional_t = typename maybe_optional_impl<is_optional<T>, T>::type;
+    using remove_optional_t = typename remove_optional_impl<is_optional<T>, T>::type;
 
     template <class T, class U, class... Ts>
     struct uniq_impl {

@@ -8,7 +8,7 @@
 
 namespace rapidjson_macros_auto {
     template<class T>
-    inline void ForwardToDeserialize(T& var, auto const& jsonName, rapidjson::Value const& jsonValue);
+    inline void ForwardToDeserialize(T& var, auto const& jsonName, rapidjson::Value& jsonValue);
     template<class T>
     inline void ForwardToSerialize(T const& var, auto const& jsonName, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator);
 }
@@ -17,7 +17,7 @@ namespace rapidjson_macros_serialization {
 
     template<class T, rapidjson_macros_types::callable F>
     requires std::is_constructible_v<std::string, T>
-    inline std::tuple<rapidjson::Value const&, bool> GetMember(rapidjson::Value const& jsonObject, T const& search, F const& onNotFound) {
+    inline std::tuple<rapidjson::Value&, bool> GetMember(rapidjson::Value& jsonObject, T const& search, F const& onNotFound) {
         if(!jsonObject.IsObject()) {
             std::stringstream exc{};
             exc << " was an unexpected type (";
@@ -26,15 +26,16 @@ namespace rapidjson_macros_serialization {
             throw JSONException(exc.str());
         }
         auto iter = jsonObject.FindMember(search);
-        if(iter != jsonObject.MemberEnd())
+        if(iter != jsonObject.MemberEnd()) {
             return {iter->value, true};
+        }
         onNotFound();
         return {jsonObject, false};
     }
 
     template<class T, rapidjson_macros_types::callable F>
     requires std::is_constructible_v<std::string, T>
-    inline std::tuple<rapidjson::Value const&, bool> GetMember(rapidjson::Value const& jsonObject, std::vector<T> const& search, F const& onNotFound) {
+    inline std::tuple<rapidjson::Value&, bool> GetMember(rapidjson::Value& jsonObject, std::vector<T> const& search, F const& onNotFound) {
         if(!jsonObject.IsObject()) {
             std::stringstream exc{};
             exc << " was an unexpected type (";
@@ -44,15 +45,16 @@ namespace rapidjson_macros_serialization {
         }
         for(auto& name : search) {
             auto iter = jsonObject.FindMember(name);
-            if(iter != jsonObject.MemberEnd())
+            if(iter != jsonObject.MemberEnd()) {
                 return {iter->value, true};
+            }
         }
         onNotFound();
         return {jsonObject, false};
     }
 
     template<rapidjson_macros_types::callable F>
-    inline std::tuple<rapidjson::Value const&, bool> GetMember(rapidjson::Value const& jsonObject, rapidjson_macros_types::SelfValueType const& search, F const& onNotFound) {
+    inline std::tuple<rapidjson::Value&, bool> GetMember(rapidjson::Value& jsonObject, rapidjson_macros_types::SelfValueType const& search, F const& onNotFound) {
         return {jsonObject, true};
     }
 
@@ -64,11 +66,11 @@ namespace rapidjson_macros_serialization {
     }
 
     template<class J, class T>
-    requires std::is_constructible_v<std::string, T> && std::is_same_v<rapidjson::Value, std::remove_const_t<J>>
+    requires std::is_same_v<rapidjson::Value, std::remove_const_t<J>>
     void RemoveMember(J& jsonObject, std::vector<T> const& search) {
         if constexpr(!std::is_const_v<J>) {
             for(auto& name : search)
-                jsonObject.RemoveMember(name);
+                RemoveMember(jsonObject, name);
         }
     }
 
@@ -117,7 +119,7 @@ namespace rapidjson_macros_serialization {
     }
 
     template<class T, rapidjson_macros_types::callable F>
-    bool DeserializeValue(rapidjson::Value const& value, T& variable, F const& onWrongType) {
+    bool DeserializeValue(rapidjson::Value& value, T& variable, F const& onWrongType) {
         if constexpr(JSONClassDerived<rapidjson_macros_types::remove_optional_t<T>>) {
             if constexpr(rapidjson_macros_types::is_optional<T>) {
                 if(!variable.has_value())
@@ -153,23 +155,6 @@ namespace rapidjson_macros_serialization {
             rapidjson::Value newValue(rapidjson_macros_types::container_t<rapidjson_macros_types::remove_optional_t<real_t>>);
             rapidjson_macros_auto::ForwardToSerialize(variable, rapidjson_macros_types::SelfValueType(), newValue, allocator);
             return newValue;
-        }
-    }
-
-    template<class S>
-    void DeserializeInternal(S* self, rapidjson::Value const& jsonValue) {
-        if constexpr(S::keepExtraFields) {
-            try {
-                self->extraFields = jsonValue;
-                for(auto& method : S::deserializers())
-                    method(self, self->extraFields->document);
-            } catch(JSONException const& e) {
-                self->extraFields->Clear();
-                throw;
-            }
-        } else {
-            for(auto& method : S::deserializers())
-                method(self, jsonValue);
         }
     }
 }

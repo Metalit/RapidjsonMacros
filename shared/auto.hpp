@@ -12,16 +12,17 @@ namespace rapidjson_macros_auto {
 
 #pragma region simple
     template<class T>
-    void Deserialize(T& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
+    void Deserialize(T& var, auto const& jsonName, rapidjson::Value& jsonValue) {
         auto&& [value, success] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         try {
             DeserializeValue(value, var, THROW_TYPE_EXCEPTION_FALLBACK(jsonValue, var));
         } catch(JSONException const& e) {
             throw JSONException(GetNameString(jsonName) + e.what());
         }
+        RemoveMember(jsonValue, jsonName);
     }
     template<class T>
-    void Deserialize(std::optional<T>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
+    void Deserialize(std::optional<T>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
         auto fallback = [&var]() {
             var = std::nullopt;
         };
@@ -34,9 +35,10 @@ namespace rapidjson_macros_auto {
         } catch(JSONException const& e) {
             throw JSONException(GetNameString(jsonName) + e.what());
         }
+        RemoveMember(jsonValue, jsonName);
     }
     template<class T, with_constructible<T> D = T>
-    void Deserialize(T& var, auto const& jsonName, D const& defaultValue, rapidjson::Value const& jsonValue) {
+    void Deserialize(T& var, auto const& jsonName, D const& defaultValue, rapidjson::Value& jsonValue) {
         auto fallback = [&var, &defaultValue]() {
             var = defaultValue;
         };
@@ -49,6 +51,7 @@ namespace rapidjson_macros_auto {
         } catch(JSONException const& e) {
             throw JSONException(GetNameString(jsonName) + e.what());
         }
+        RemoveMember(jsonValue, jsonName);
     }
 
     template<class T>
@@ -76,24 +79,27 @@ namespace rapidjson_macros_auto {
 
 #pragma region vector
     template<class T>
-    void Deserialize(std::vector<T>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
+    void Deserialize(std::vector<T>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
         auto&& [value, success] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         if(!value.IsArray())
             throw JSONException(GetNameString(jsonName) + TYPE_EXCEPTION_STRING(jsonValue, var));
         var.clear();
-        for(auto it = value.Begin(); it != value.End(); ++it) {
+        for(auto it = value.Begin(); it != value.End();) {
             auto& inst = var.emplace_back(NewType(var));
             try {
                 DeserializeValue(*it, inst, THROW_TYPE_EXCEPTION_FALLBACK(*it, inst));
+                it = value.Erase(it);
             } catch(JSONException const& e) {
                 throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]" + e.what());
             }
         }
+        RemoveMember(jsonValue, jsonName);
     }
     template<class T>
-    void Deserialize(std::optional<std::vector<T>>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
-        auto fallback = [&var]() {
+    void Deserialize(std::optional<std::vector<T>>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
+        auto fallback = [&var, &jsonValue, &jsonName]() {
             var = std::nullopt;
+            RemoveMember(jsonValue, jsonName);
         };
         auto&& [value, success] = GetMember(jsonValue, jsonName, fallback);
         if(!success)
@@ -103,20 +109,23 @@ namespace rapidjson_macros_auto {
         if(!var)
             var.emplace();
         var->clear();
-        for(auto it = value.Begin(); it != value.End(); ++it) {
+        for(auto it = value.Begin(); it != value.End();) {
             auto& inst = var->emplace_back(NewType(var));
             try {
                 if(!DeserializeValue(*it, inst, fallback))
                     return;
+                it = value.Erase(it);
             } catch(JSONException const& e) {
                 throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]" + e.what());
             }
         }
+        RemoveMember(jsonValue, jsonName);
     }
     template<class T, with_constructible<std::vector<T>> D = std::vector<T>>
-    void Deserialize(std::vector<T>& var, auto const& jsonName, D const& defaultValue, rapidjson::Value const& jsonValue) {
-        auto fallback = [&var, &defaultValue]() {
+    void Deserialize(std::vector<T>& var, auto const& jsonName, D const& defaultValue, rapidjson::Value& jsonValue) {
+        auto fallback = [&var, &defaultValue, &jsonValue, &jsonName]() {
             var = defaultValue;
+            RemoveMember(jsonValue, jsonName);
         };
         auto&& [value, success] = GetMember(jsonValue, jsonName, fallback);
         if(!success)
@@ -124,15 +133,17 @@ namespace rapidjson_macros_auto {
         if(!value.IsArray())
             return fallback();
         var.clear();
-        for(auto it = value.Begin(); it != value.End(); ++it) {
+        for(auto it = value.Begin(); it != value.End();) {
             auto& inst = var.emplace_back(NewType(var));
             try {
                 if(!DeserializeValue(*it, inst, fallback))
                     return;
+                it = value.Erase(it);
             } catch(JSONException const& e) {
                 throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]" + e.what());
             }
         }
+        RemoveMember(jsonValue, jsonName);
     }
 
     template<class T>
@@ -166,24 +177,27 @@ namespace rapidjson_macros_auto {
 
 #pragma region map
     template<class T>
-    void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
+    void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
         auto&& [value, success] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         if(!value.IsObject())
             throw JSONException(GetNameString(jsonName) + TYPE_EXCEPTION_STRING(jsonValue, var));
         var.clear();
-        for(auto& member : value.GetObject()) {
-            auto& inst = var[member.name.GetString()] = NewType(var);
+        for(auto it = value.MemberBegin(); it != value.MemberEnd();) {
+            auto& inst = var[it->name.GetString()] = NewType(var);
             try {
-                DeserializeValue(member.value, inst, THROW_TYPE_EXCEPTION_FALLBACK(member.value, inst));
+                DeserializeValue(it->value, inst, THROW_TYPE_EXCEPTION_FALLBACK(it->value, inst));
+                it = value.RemoveMember(it);
             } catch(JSONException const& e) {
-                throw JSONException(GetNameString(jsonName) + "[" + member.name.GetString() + "]" + e.what());
+                throw JSONException(GetNameString(jsonName) + "[" + it->name.GetString() + "]" + e.what());
             }
         }
+        RemoveMember(jsonValue, jsonName);
     }
     template<class T>
-    void Deserialize(std::optional<StringKeyedMap<T>>& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
-        auto fallback = [&var]() {
+    void Deserialize(std::optional<StringKeyedMap<T>>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
+        auto fallback = [&var, &jsonValue, &jsonName]() {
             var = std::nullopt;
+            RemoveMember(jsonValue, jsonName);
         };
         auto&& [value, success] = GetMember(jsonValue, jsonName, fallback);
         if(!success)
@@ -193,20 +207,23 @@ namespace rapidjson_macros_auto {
         if(!var)
             var.emplace();
         var->clear();
-        for(auto& member : value.GetObject()) {
-            auto& inst = var[member.name.GetString()] = NewType(var);
+        for(auto it = value.MemberBegin(); it != value.MemberEnd();) {
+            auto& inst = var[it->name.GetString()] = NewType(var);
             try {
-                if(!DeserializeValue(member.value, inst, fallback))
+                if(!DeserializeValue(it->value, inst, fallback))
                     return;
+                it = value.RemoveMember(it);
             } catch(JSONException const& e) {
-                throw JSONException(GetNameString(jsonName) + "[" + member.name.GetString() + "]" + e.what());
+                throw JSONException(GetNameString(jsonName) + "[" + it->name.GetString() + "]" + e.what());
             }
         }
+        RemoveMember(jsonValue, jsonName);
     }
     template<class T, with_constructible<StringKeyedMap<T>> D = StringKeyedMap<T>>
-    void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, D const& defaultValue, rapidjson::Value const& jsonValue) {
-        auto fallback = [&var, &defaultValue]() {
+    void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, D const& defaultValue, rapidjson::Value& jsonValue) {
+        auto fallback = [&var, &defaultValue, &jsonValue, &jsonName]() {
             var = defaultValue;
+            RemoveMember(jsonValue, jsonName);
         };
         auto&& [value, success] = GetMember(jsonValue, jsonName, fallback);
         if(!success)
@@ -214,15 +231,17 @@ namespace rapidjson_macros_auto {
         if(!value.IsObject())
             return fallback();
         var.clear();
-        for(auto& member : value.GetObject()) {
-            auto& inst = var[member.name.GetString()] = NewType(var);
+        for(auto it = value.MemberBegin(); it != value.MemberEnd();) {
+            auto& inst = var[it->name.GetString()] = NewType(var);
             try {
-                if(!DeserializeValue(member.value, inst, fallback))
+                if(!DeserializeValue(it->value, inst, fallback))
                     return;
+                it = value.RemoveMember(it);
             } catch(JSONException const& e) {
-                throw JSONException(GetNameString(jsonName) + "[" + member.name.GetString() + "]" + e.what());
+                throw JSONException(GetNameString(jsonName) + "[" + it->name.GetString() + "]" + e.what());
             }
         }
+        RemoveMember(jsonValue, jsonName);
     }
 
     template<class T>
@@ -256,7 +275,7 @@ namespace rapidjson_macros_auto {
     }
 #pragma endregion
     template<class T>
-    inline void ForwardToDeserialize(T& var, auto const& jsonName, rapidjson::Value const& jsonValue) {
+    inline void ForwardToDeserialize(T& var, auto const& jsonName, rapidjson::Value& jsonValue) {
         Deserialize(var, jsonName, jsonValue);
     }
 

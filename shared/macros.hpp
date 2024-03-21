@@ -7,12 +7,8 @@
 #define DECLARE_JSON_CLASS(name, ...) \
 class name : public JSONClass { \
     using SelfType = name; \
-    friend void rapidjson_macros_serialization::DeserializeInternal<name>(name* self, rapidjson::Value const& jsonValue); \
     public: \
         __VA_ARGS__ \
-    private: \
-        template<class T> \
-        using const_t = std::conditional_t<name::keepExtraFields, T, std::add_const_t<T>>; \
     public: \
         rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const { \
             rapidjson::Value jsonObject(rapidjson::kObjectType); \
@@ -22,8 +18,11 @@ class name : public JSONClass { \
                 method(this, jsonObject, allocator); \
             return jsonObject; \
         } \
-        void Deserialize(rapidjson::Value const& jsonValue) { \
-            rapidjson_macros_serialization::DeserializeInternal(this, jsonValue); \
+        void Deserialize(rapidjson::Value& jsonValue) { \
+            for(auto& method : deserializers()) \
+                method(this, jsonValue); \
+            if(keepExtraFields) \
+                extraFields = jsonValue; \
         } \
         bool operator==(class name const&) const = default; \
     private: \
@@ -31,8 +30,8 @@ class name : public JSONClass { \
             static std::vector<void(*)(const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> instance = {}; \
             return instance; \
         } \
-        static inline std::vector<void(*)(SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue)>& deserializers() { \
-            static std::vector<void(*)(SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue)> instance = {}; \
+        static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonValue)>& deserializers() { \
+            static std::vector<void(*)(SelfType* self, rapidjson::Value& jsonValue)> instance = {}; \
             return instance; \
         } \
         std::optional<rapidjson_macros_types::CopyableValue> extraFields = std::nullopt; \
@@ -53,7 +52,7 @@ class name : public JSONClass { \
 #define DESERIALIZE_ACTION(uid, ...) \
 class _DeserializeAction_##uid { \
     _DeserializeAction_##uid() { \
-        deserializers().emplace_back([](SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue) { \
+        deserializers().emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
             __VA_ARGS__ \
         }); \
     } \
@@ -90,10 +89,8 @@ class _JSONValueAdder_##name { \
         serializers().emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
         }); \
-        deserializers().emplace_back([](SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue) { \
+        deserializers().emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
             rapidjson_macros_auto::Deserialize(self->name, jsonName, jsonValue); \
-            if constexpr(SelfType::keepExtraFields) \
-                rapidjson_macros_serialization::RemoveMember(jsonValue, jsonName); \
         }); \
     } \
     friend class rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name>; \
@@ -110,10 +107,8 @@ class _JSONValueAdder_##name { \
         serializers().emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
         }); \
-        deserializers().emplace_back([](SelfType* self, SelfType::const_t<rapidjson::Value>& jsonValue) { \
+        deserializers().emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
             rapidjson_macros_auto::Deserialize(self->name, jsonName, def, jsonValue); \
-            if constexpr(SelfType::keepExtraFields) \
-                rapidjson_macros_serialization::RemoveMember(jsonValue, jsonName); \
         }); \
     } \
     friend class rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name>; \
@@ -157,7 +152,7 @@ class _JSONValueAdder_##name { \
 // instead of being a field with a name inside the object
 #define SELF_OBJECT_NAME rapidjson_macros_types::SelfValueType()
 
-// declare a class that can accept multiple types
+// a class that can accept multiple types
 #pragma region TypeOptions<types...>
 template<typename TDefault, typename... Ts>
 class TypeOptions : public JSONClass {
@@ -165,8 +160,10 @@ class TypeOptions : public JSONClass {
     private:
         template<typename T>
         static bool IsType(rapidjson::Value const& jsonValue, T& var) {
+            rapidjson::Document tmp;
+            tmp.CopyFrom(jsonValue, tmp.GetAllocator());
             try {
-                rapidjson_macros_auto::Deserialize(var, rapidjson_macros_types::SelfValueType(), jsonValue);
+                rapidjson_macros_auto::Deserialize(var, rapidjson_macros_types::SelfValueType(), tmp);
                 return true;
             } catch (JSONException const& e) {
                 return false;
@@ -185,11 +182,11 @@ class TypeOptions : public JSONClass {
             return IsType<C>(jsonValue);
         }
     public:
-        void Deserialize(rapidjson::Value const& jsonValue) {
+        void Deserialize(rapidjson::Value& jsonValue) {
             if(!CheckValueWithTypes<TDefault, Ts...>(jsonValue)) {
                 throw JSONException(" was an unexpected type (" +
                 rapidjson_macros_types::JsonTypeName(jsonValue) + "), type expected was: " +
-                rapidjson_macros_types::CppTypeName(TypeOptions<TDefault, Ts...>()));
+                rapidjson_macros_types::CppTypeName(*this));
             } else
                 storedValue = jsonValue;
         }
@@ -238,7 +235,7 @@ class TypeOptions : public JSONClass {
 #pragma region UnparsedJSON
 class UnparsedJSON : public JSONClass {
     public:
-        void Deserialize(rapidjson::Value const& jsonValue) {
+        void Deserialize(rapidjson::Value& jsonValue) {
             storedValue = jsonValue;
         }
         rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const {
@@ -249,7 +246,14 @@ class UnparsedJSON : public JSONClass {
         template<JSONClassDerived T>
         T Parse() const {
             T ret;
-            ret.Deserialize(storedValue.document);
+            rapidjson::Document tmp;
+            tmp.CopyFrom(storedValue.document, tmp.GetAllocator());
+            try {
+                ret.Deserialize(tmp);
+            } catch(JSONException const& e) {
+                auto str = "UnparsedJSON<" + rapidjson_macros_types::CppTypeName(ret) + ">";
+                throw JSONException(str + e.what());
+            }
             return ret;
         }
         template<JSONClassDerived T>

@@ -18,7 +18,7 @@ class JSONException : public std::exception {
 class JSONClass {
     public:
         static inline constexpr bool keepExtraFields = true;
-        virtual void Deserialize(rapidjson::Value const& jsonValue) = 0;
+        virtual void Deserialize(rapidjson::Value& jsonValue) = 0;
         virtual rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const = 0;
         bool operator==(const JSONClass&) const = default; \
 };
@@ -58,6 +58,10 @@ namespace rapidjson_macros_types {
     template <class T, class U>
     struct uniq_impl<T, U> {
         static constexpr bool value = !std::is_same_v<T, U>;
+    };
+    template <class T>
+    struct uniq_impl<T, bool> { // dummy type, doesn't matter
+        static constexpr bool value = true;
     };
 
     template <class... Ts>
@@ -125,6 +129,14 @@ namespace rapidjson_macros_types {
     requires(std::is_convertible_v<T, std::string>)
     inline std::string CppTypeName(const T& var) {
         return "std::string";
+    }
+    template<class T>
+    inline std::string CppTypeName(const std::vector<T>& var) {
+        return "std::vector<" + CppTypeName(T()) + ">";
+    }
+    template<class T>
+    inline std::string CppTypeName(const StringKeyedMap<T>& var) {
+        return "StringKeyedMap<" + CppTypeName(T()) + ">";
     }
     inline std::string JsonTypeName(rapidjson::Value const& jsonValue) {
         auto type = jsonValue.GetType();

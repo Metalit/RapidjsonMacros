@@ -2,45 +2,45 @@
 
 #include "./auto.hpp"
 
-// declare a class with serialization and deserialization support using the Read and Write functions
-#pragma region DECLARE_JSON_CLASS(name, fields)
-#define DECLARE_JSON_CLASS(name, ...) \
-class name : public JSONClass { \
-    using SelfType = name; \
-    public: \
-        __VA_ARGS__ \
-    public: \
-        rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const { \
-            rapidjson::Value jsonObject(rapidjson::kObjectType); \
-            if(keepExtraFields && extraFields.has_value()) \
-                jsonObject.CopyFrom(extraFields->document, allocator); \
-            for(auto& method : serializers()) \
-                method(this, jsonObject, allocator); \
-            return jsonObject; \
-        } \
-        void Deserialize(rapidjson::Value& jsonValue) { \
-            for(auto& method : deserializers()) \
-                method(this, jsonValue); \
-            if(keepExtraFields) \
-                extraFields = jsonValue; \
-        } \
-        bool operator==(class name const&) const = default; \
-    private: \
-        static inline std::vector<void(*)(const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)>& serializers() { \
-            static std::vector<void(*)(const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> instance = {}; \
-            return instance; \
-        } \
-        static inline std::vector<void(*)(SelfType* self, rapidjson::Value& jsonValue)>& deserializers() { \
-            static std::vector<void(*)(SelfType* self, rapidjson::Value& jsonValue)> instance = {}; \
-            return instance; \
-        } \
-        std::optional<rapidjson_macros_types::CopyableValue> extraFields = std::nullopt; \
-};
+// declare a struct with serialization and deserialization support using the Read and Write functions
+#pragma region DECLARE_JSON_STRUCT(name, base Ts)
+#define DECLARE_JSON_STRUCT(name, ...) \
+template<class T> \
+struct rapidjson_macros_internal_##name##_parent __VA_OPT__(:) __VA_ARGS__ { \
+    rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const { \
+        rapidjson::Value jsonObject(rapidjson::kObjectType); \
+        if (keepExtraFields && extraFields.has_value()) \
+            jsonObject.CopyFrom(extraFields->document, allocator); \
+        for (auto& method : serializers()) \
+            method((T*) this, jsonObject, allocator); \
+        return jsonObject; \
+    } \
+    void Deserialize(rapidjson::Value& jsonValue) { \
+        for (auto& method : deserializers()) \
+            method((T*) this, jsonValue); \
+        if (keepExtraFields) \
+            extraFields = jsonValue; \
+    } \
+    static inline constexpr bool keepExtraFields = false; \
+    bool operator==(rapidjson_macros_internal_##name##_parent<T> const& rhs) const = default; \
+   protected: \
+    using SelfType = T; \
+    static inline std::vector<void(*)(const T* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)>& serializers() { \
+        static std::vector<void(*)(const T* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> instance = {}; \
+        return instance; \
+    } \
+    static inline std::vector<void(*)(T* self, rapidjson::Value& jsonValue)>& deserializers() { \
+        static std::vector<void(*)(T* self, rapidjson::Value& jsonValue)> instance = {}; \
+        return instance; \
+    } \
+    std::optional<rapidjson_macros_types::CopyableValue> extraFields = std::nullopt; \
+}; \
+struct name : rapidjson_macros_internal_##name##_parent<name>
 #pragma endregion
 
-// prevents the class from preserving json data not specified in class fields and serialization
-#pragma region DISCARD_EXTRA_FIELDS
-#define DISCARD_EXTRA_FIELDS static inline constexpr bool keepExtraFields = false;
+// preserves json data not specified in class fields when reserialized
+#pragma region KEEP_EXTRA_FIELDS
+#define KEEP_EXTRA_FIELDS static inline constexpr bool keepExtraFields = true;
 #pragma endregion
 
 // add an action to be run during deserialization (requires an identifier unique to the class)
@@ -155,7 +155,7 @@ class _JSONValueAdder_##name { \
 // a class that can accept multiple types
 #pragma region TypeOptions<types...>
 template<typename TDefault, typename... Ts>
-class TypeOptions : public JSONClass {
+class TypeOptions {
     static_assert(rapidjson_macros_types::all_unique<TDefault, Ts...>, "All template arguments of TypeOptions must be unique");
     private:
         template<typename T>
@@ -233,7 +233,7 @@ class TypeOptions : public JSONClass {
 
 // allows the storing of unparsed json in a value, with utility methods to parse and set with other JSONClasses
 #pragma region UnparsedJSON
-class UnparsedJSON : public JSONClass {
+class UnparsedJSON {
     public:
         void Deserialize(rapidjson::Value& jsonValue) {
             storedValue = jsonValue;
@@ -243,7 +243,7 @@ class UnparsedJSON : public JSONClass {
             ret.CopyFrom(storedValue.document, allocator);
             return ret;
         }
-        template<JSONClassDerived T>
+        template<JSONStruct T>
         T Parse() const {
             T ret;
             rapidjson::Document tmp;
@@ -256,16 +256,16 @@ class UnparsedJSON : public JSONClass {
             }
             return ret;
         }
-        template<JSONClassDerived T>
+        template<JSONStruct T>
         void Set(T value) {
             value.Serialize(storedValue.document.GetAllocator()).Swap(storedValue.document);
         }
-        template<JSONClassDerived T>
+        template<JSONStruct T>
         UnparsedJSON& operator=(T&& other) {
             Set(other);
             return *this;
         }
-        template<JSONClassDerived T>
+        template<JSONStruct T>
         UnparsedJSON(T value) {
             Set(value);
         }

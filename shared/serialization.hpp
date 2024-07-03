@@ -120,7 +120,7 @@ namespace rapidjson_macros_serialization {
 
     template<class T, rapidjson_macros_types::callable F>
     bool DeserializeValue(rapidjson::Value& value, T& variable, F const& onWrongType) {
-        if constexpr(JSONClassDerived<rapidjson_macros_types::remove_optional_t<T>>) {
+        if constexpr(JSONStruct<rapidjson_macros_types::remove_optional_t<T>>) {
             if constexpr(rapidjson_macros_types::is_optional<T>) {
                 if(!variable.has_value())
                     variable.emplace();
@@ -141,7 +141,7 @@ namespace rapidjson_macros_serialization {
     template<class T>
     rapidjson::Value SerializeValue(T const& variable, rapidjson::Document::AllocatorType& allocator) {
         using real_t = std::decay_t<decltype(variable)>; // fixes issues with const for char arrays
-        if constexpr(JSONClassDerived<rapidjson_macros_types::remove_optional_t<real_t>>) {
+        if constexpr(JSONStruct<rapidjson_macros_types::remove_optional_t<real_t>>) {
             if constexpr(rapidjson_macros_types::is_optional<T>)
                 return variable->Serialize(allocator);
             else
@@ -159,14 +159,7 @@ namespace rapidjson_macros_serialization {
     }
 }
 
-template<JSONClassDerived T>
-static inline void ReadFromFile(std::string_view path, T& toDeserialize) {
-    if(!fileexists(path))
-        throw JSONException("file not found");
-    return ReadFromString(readfile(path), toDeserialize);
-}
-
-template<JSONClassDerived T>
+template<JSONStruct T>
 static void ReadFromString(std::string_view string, T& toDeserialize) {
     rapidjson::Document document;
     document.Parse(string.data());
@@ -176,26 +169,28 @@ static void ReadFromString(std::string_view string, T& toDeserialize) {
     toDeserialize.Deserialize(document);
 }
 
-template<JSONClassDerived T>
+template<JSONStruct T>
+static inline T ReadFromString(std::string_view string) {
+    T ret;
+    ReadFromString(string, ret);
+    return ret;
+}
+
+template<JSONStruct T>
+static inline void ReadFromFile(std::string_view path, T& toDeserialize) {
+    if(!fileexists(path))
+        throw JSONException("file not found");
+    return ReadFromString(readfile(path), toDeserialize);
+}
+
+template<JSONStruct T>
 static inline T ReadFromFile(std::string_view path) {
     T ret;
     ReadFromFile(path, ret);
     return ret;
 }
 
-template<JSONClassDerived T>
-static inline T ReadFromString(std::string_view path) {
-    T ret;
-    ReadFromString(path, ret);
-    return ret;
-}
-
-template<JSONClassDerived T>
-static inline bool WriteToFile(std::string_view path, const T& toSerialize, bool pretty = false) {
-    return writefile(path, WriteToString(toSerialize, pretty));
-}
-
-template<JSONClassDerived T>
+template<JSONStruct T>
 static std::string WriteToString(const T& toSerialize, bool pretty = false) {
     rapidjson::Document document;
     toSerialize.Serialize(document.GetAllocator()).Swap(document);
@@ -209,4 +204,9 @@ static std::string WriteToString(const T& toSerialize, bool pretty = false) {
         document.Accept(writer);
     }
     return buffer.GetString();
+}
+
+template<JSONStruct T>
+static inline bool WriteToFile(std::string_view path, const T& toSerialize, bool pretty = false) {
+    return writefile(path, WriteToString(toSerialize, pretty));
 }

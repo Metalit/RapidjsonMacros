@@ -15,19 +15,11 @@ class JSONException : public std::exception {
         }
 };
 
-class JSONClass {
-    public:
-        static inline constexpr bool keepExtraFields = true;
-        virtual void Deserialize(rapidjson::Value& jsonValue) = 0;
-        virtual rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const = 0;
-        bool operator==(const JSONClass&) const = default; \
-};
+template<class T>
+concept JSONStruct = requires(T t, rapidjson::Document d) { t.Deserialize(d); t.Serialize(d.GetAllocator()).IsObject(); };
 
 template<class T>
-concept JSONClassDerived = std::is_base_of_v<JSONClass, std::decay_t<T>>;
-
-template<class T>
-concept JSONBasicType = requires(T t) { rapidjson::internal::TypeHelper<rapidjson::Value, std::decay_t<T>>::Is; };
+concept JSONBasicType = requires { rapidjson::internal::TypeHelper<rapidjson::Value, std::decay_t<T>>::Is; };
 
 template<class T>
 using StringKeyedMap = std::map<std::string, T>;

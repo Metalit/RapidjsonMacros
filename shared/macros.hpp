@@ -5,7 +5,7 @@
 // declare a struct with serialization and deserialization support using the Read and Write functions
 #pragma region DECLARE_JSON_STRUCT(name, base Ts)
 #define DECLARE_JSON_STRUCT(name, ...) \
-template<class T> \
+template <class T> \
 struct rapidjson_macros_internal_##name##_parent __VA_OPT__(:) __VA_ARGS__ { \
     rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const { \
         rapidjson::Value jsonObject(rapidjson::kObjectType); \
@@ -25,8 +25,8 @@ struct rapidjson_macros_internal_##name##_parent __VA_OPT__(:) __VA_ARGS__ { \
     bool operator==(rapidjson_macros_internal_##name##_parent<T> const& rhs) const = default; \
    protected: \
     using SelfType = T; \
-    static inline std::vector<void(*)(const T* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)>& serializers() { \
-        static std::vector<void(*)(const T* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> instance = {}; \
+    static inline std::vector<void(*)(T const* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)>& serializers() { \
+        static std::vector<void(*)(T const* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator)> instance = {}; \
         return instance; \
     } \
     static inline std::vector<void(*)(T* self, rapidjson::Value& jsonValue)>& deserializers() { \
@@ -71,7 +71,7 @@ class _DeserializeAction_##uid { \
 #define SERIALIZE_ACTION(uid, ...) \
 class _SerializeAction_##uid { \
     _SerializeAction_##uid() { \
-        serializers().emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serializers().emplace_back([](SelfType const* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             __VA_ARGS__ \
         }); \
     } \
@@ -86,7 +86,7 @@ class _SerializeAction_##uid { \
 type name = {}; \
 class _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
-        serializers().emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serializers().emplace_back([](SelfType const* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
         }); \
         deserializers().emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
@@ -104,7 +104,7 @@ class _JSONValueAdder_##name { \
 type name = def; \
 class _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
-        serializers().emplace_back([](const SelfType* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
+        serializers().emplace_back([](SelfType const* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
             rapidjson_macros_auto::Serialize(self->name, jsonName, jsonObject, allocator); \
         }); \
         deserializers().emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
@@ -154,124 +154,126 @@ class _JSONValueAdder_##name { \
 
 // a class that can accept multiple types
 #pragma region TypeOptions<types...>
-template<typename TDefault, typename... Ts>
+template <typename TDefault, typename... Ts>
 class TypeOptions {
     static_assert(rapidjson_macros_types::all_unique<TDefault, Ts...>, "All template arguments of TypeOptions must be unique");
-    private:
-        template<typename T>
-        static bool IsType(rapidjson::Value const& jsonValue, T& var) {
-            rapidjson::Document tmp;
-            tmp.CopyFrom(jsonValue, tmp.GetAllocator());
-            try {
-                rapidjson_macros_auto::Deserialize(var, rapidjson_macros_types::SelfValueType(), tmp);
-                return true;
-            } catch (JSONException const& e) {
-                return false;
-            }
-        }
-        template<typename T>
-        static bool IsType(rapidjson::Value const& jsonValue) {
-            T var;
-            return IsType<T>(jsonValue, var);
-        }
-        rapidjson_macros_types::CopyableValue storedValue;
-        template<typename C, typename... Cs>
-        static bool CheckValueWithTypes(rapidjson::Value const& jsonValue) {
-            if constexpr(sizeof...(Cs) > 0)
-                return IsType<C>(jsonValue) || CheckValueWithTypes<Cs...>(jsonValue);
-            return IsType<C>(jsonValue);
-        }
-    public:
-        void Deserialize(rapidjson::Value& jsonValue) {
-            if(!CheckValueWithTypes<TDefault, Ts...>(jsonValue)) {
-                throw JSONException(" was an unexpected type (" +
-                rapidjson_macros_types::JsonTypeName(jsonValue) + "), type expected was: " +
-                rapidjson_macros_types::CppTypeName(*this));
-            } else
-                storedValue = jsonValue;
-        }
-        rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const {
-            rapidjson::Value ret;
-            ret.CopyFrom(storedValue.document, allocator);
-            return ret;
-        }
 
-        template<typename T>
-        requires (std::is_convertible_v<TDefault, T> || (std::is_convertible_v<Ts, T> || ...))
-        bool Is() const {
-            return IsType<T>(storedValue.document);
+   private:
+    template <typename T>
+    static bool IsType(rapidjson::Value const& jsonValue, T& var) {
+        rapidjson::Document tmp;
+        tmp.CopyFrom(jsonValue, tmp.GetAllocator());
+        try {
+            rapidjson_macros_auto::Deserialize(var, rapidjson_macros_types::SelfValueType(), tmp);
+            return true;
+        } catch (JSONException const& e) {
+            return false;
         }
-        template<typename T>
-        requires (std::is_convertible_v<TDefault, T> || (std::is_convertible_v<Ts, T> || ...))
-        std::optional<T> GetValue() const {
-            T ret;
-            if(!IsType<T>(storedValue.document, ret))
-                return std::nullopt;
-            return ret;
-        }
-        template<typename T>
-        requires (std::is_convertible_v<T, TDefault> || (std::is_convertible_v<T, Ts> || ...))
-        void SetValue(T&& value) {
-            rapidjson_macros_types::first_convertible_t<std::remove_reference_t<T>, TDefault, Ts...> const& casted = value;
-            storedValue = rapidjson_macros_serialization::SerializeValue(casted, storedValue.document.GetAllocator());
-        }
-        template<typename T>
-        requires (std::is_convertible_v<T, TDefault> || (std::is_convertible_v<T, Ts> || ...))
-        TypeOptions<TDefault, Ts...>& operator=(T&& other) {
-            SetValue(other);
-            return *this;
-        }
-        TypeOptions() { SetValue(TDefault()); };
-        template<typename T>
-        requires (std::is_convertible_v<T, TDefault> || (std::is_convertible_v<T, Ts> || ...))
-        TypeOptions(T value) {
-            SetValue(value);
-        }
-        TypeOptions(TypeOptions<TDefault, Ts...> const& value) = default;
+    }
+    template <typename T>
+    static bool IsType(rapidjson::Value const& jsonValue) {
+        T var;
+        return IsType<T>(jsonValue, var);
+    }
+    rapidjson_macros_types::CopyableValue storedValue;
+    template <typename C, typename... Cs>
+    static bool CheckValueWithTypes(rapidjson::Value const& jsonValue) {
+        if constexpr (sizeof...(Cs) > 0)
+            return IsType<C>(jsonValue) || CheckValueWithTypes<Cs...>(jsonValue);
+        return IsType<C>(jsonValue);
+    }
+
+   public:
+    void Deserialize(rapidjson::Value& jsonValue) {
+        if (!CheckValueWithTypes<TDefault, Ts...>(jsonValue)) {
+            throw JSONException(
+                " was an unexpected type (" + rapidjson_macros_types::JsonTypeName(jsonValue) +
+                "), type expected was: " + rapidjson_macros_types::CppTypeName(*this)
+            );
+        } else
+            storedValue = jsonValue;
+    }
+    rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const {
+        rapidjson::Value ret;
+        ret.CopyFrom(storedValue.document, allocator);
+        return ret;
+    }
+
+    template <typename T>
+    requires(std::is_convertible_v<TDefault, T> || (std::is_convertible_v<Ts, T> || ...))
+    bool Is() const {
+        return IsType<T>(storedValue.document);
+    }
+    template <typename T>
+    requires(std::is_convertible_v<TDefault, T> || (std::is_convertible_v<Ts, T> || ...))
+    std::optional<T> GetValue() const {
+        T ret;
+        if (!IsType<T>(storedValue.document, ret))
+            return std::nullopt;
+        return ret;
+    }
+    template <typename T>
+    requires(std::is_convertible_v<T, TDefault> || (std::is_convertible_v<T, Ts> || ...))
+    void SetValue(T&& value) {
+        rapidjson_macros_types::first_convertible_t<std::remove_reference_t<T>, TDefault, Ts...> const& casted = value;
+        storedValue = rapidjson_macros_serialization::SerializeValue(casted, storedValue.document.GetAllocator());
+    }
+    template <typename T>
+    requires(std::is_convertible_v<T, TDefault> || (std::is_convertible_v<T, Ts> || ...))
+    TypeOptions<TDefault, Ts...>& operator=(T&& other) {
+        SetValue(other);
+        return *this;
+    }
+    TypeOptions() { SetValue(TDefault()); };
+    template <typename T>
+    requires(std::is_convertible_v<T, TDefault> || (std::is_convertible_v<T, Ts> || ...))
+    TypeOptions(T value) {
+        SetValue(value);
+    }
+    TypeOptions(TypeOptions<TDefault, Ts...> const& value) = default;
 };
 #pragma endregion
 
 // allows the storing of unparsed json in a value, with utility methods to parse and set with other JSONClasses
 #pragma region UnparsedJSON
 class UnparsedJSON {
-    public:
-        void Deserialize(rapidjson::Value& jsonValue) {
-            storedValue = jsonValue;
+   public:
+    void Deserialize(rapidjson::Value& jsonValue) { storedValue = jsonValue; }
+    rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const {
+        rapidjson::Value ret;
+        ret.CopyFrom(storedValue.document, allocator);
+        return ret;
+    }
+    template <JSONStruct T>
+    T Parse() const {
+        T ret;
+        rapidjson::Document tmp;
+        tmp.CopyFrom(storedValue.document, tmp.GetAllocator());
+        try {
+            ret.Deserialize(tmp);
+        } catch (JSONException const& e) {
+            auto str = "UnparsedJSON<" + rapidjson_macros_types::CppTypeName(ret) + ">";
+            throw JSONException(str + e.what());
         }
-        rapidjson::Value Serialize(rapidjson::Document::AllocatorType& allocator) const {
-            rapidjson::Value ret;
-            ret.CopyFrom(storedValue.document, allocator);
-            return ret;
-        }
-        template<JSONStruct T>
-        T Parse() const {
-            T ret;
-            rapidjson::Document tmp;
-            tmp.CopyFrom(storedValue.document, tmp.GetAllocator());
-            try {
-                ret.Deserialize(tmp);
-            } catch(JSONException const& e) {
-                auto str = "UnparsedJSON<" + rapidjson_macros_types::CppTypeName(ret) + ">";
-                throw JSONException(str + e.what());
-            }
-            return ret;
-        }
-        template<JSONStruct T>
-        void Set(T value) {
-            value.Serialize(storedValue.document.GetAllocator()).Swap(storedValue.document);
-        }
-        template<JSONStruct T>
-        UnparsedJSON& operator=(T&& other) {
-            Set(other);
-            return *this;
-        }
-        template<JSONStruct T>
-        UnparsedJSON(T value) {
-            Set(value);
-        }
-        UnparsedJSON() = default;
-        UnparsedJSON(UnparsedJSON const& value) = default;
-    private:
-        rapidjson_macros_types::CopyableValue storedValue;
+        return ret;
+    }
+    template <JSONStruct T>
+    void Set(T value) {
+        value.Serialize(storedValue.document.GetAllocator()).Swap(storedValue.document);
+    }
+    template <JSONStruct T>
+    UnparsedJSON& operator=(T&& other) {
+        Set(other);
+        return *this;
+    }
+    template <JSONStruct T>
+    UnparsedJSON(T value) {
+        Set(value);
+    }
+    UnparsedJSON() = default;
+    UnparsedJSON(UnparsedJSON const& value) = default;
+
+   private:
+    rapidjson_macros_types::CopyableValue storedValue;
 };
 #pragma endregion

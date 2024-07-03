@@ -204,11 +204,15 @@ namespace rapidjson_macros_types {
 
     template<class T>
     inline bool GetIsType(rapidjson::Value const& jsonValue, const T& _) {
+        if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>)
+            return jsonValue.IsNumber();
         return jsonValue.Is<T>();
     }
 
     template<class T>
     inline bool GetIsType(rapidjson::Value const& jsonValue, const std::optional<T>& _) {
+        if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>)
+            return jsonValue.IsNumber();
         return jsonValue.Is<T>();
     }
 

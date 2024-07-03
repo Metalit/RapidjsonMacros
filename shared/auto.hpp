@@ -15,7 +15,7 @@ namespace rapidjson_macros_auto {
     void Deserialize(T& var, auto const& jsonName, rapidjson::Value& jsonValue) {
         auto&& [value, success] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         try {
-            DeserializeValue(value, var, THROW_TYPE_EXCEPTION_FALLBACK(jsonValue, var));
+            DeserializeValue(value, var, THROW_TYPE_EXCEPTION_FALLBACK(value, var));
         } catch(JSONException const& e) {
             throw JSONException(GetNameString(jsonName) + e.what());
         }
@@ -33,7 +33,8 @@ namespace rapidjson_macros_auto {
             if(!DeserializeValue(value, var, fallback))
                 return;
         } catch(JSONException const& e) {
-            throw JSONException(GetNameString(jsonName) + e.what());
+            return fallback(); // configurable to throw exception?
+            // throw JSONException(GetNameString(jsonName) + e.what());
         }
         RemoveMember(jsonValue, jsonName);
     }
@@ -49,7 +50,8 @@ namespace rapidjson_macros_auto {
             if(!DeserializeValue(value, var, fallback))
                 return;
         } catch(JSONException const& e) {
-            throw JSONException(GetNameString(jsonName) + e.what());
+            return fallback(); // configurable to throw exception?
+            // throw JSONException(GetNameString(jsonName) + e.what());
         }
         RemoveMember(jsonValue, jsonName);
     }
@@ -82,7 +84,7 @@ namespace rapidjson_macros_auto {
     void Deserialize(std::vector<T>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
         auto&& [value, success] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         if(!value.IsArray())
-            throw JSONException(GetNameString(jsonName) + TYPE_EXCEPTION_STRING(jsonValue, var));
+            throw JSONException(GetNameString(jsonName) + TYPE_EXCEPTION_STRING(value, var));
         var.clear();
         for(auto it = value.Begin(); it != value.End();) {
             auto& inst = var.emplace_back(NewType(var));
@@ -116,7 +118,8 @@ namespace rapidjson_macros_auto {
                     return;
                 it = value.Erase(it);
             } catch(JSONException const& e) {
-                throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]" + e.what());
+                return fallback(); // configurable to throw exception?
+                // throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]" + e.what());
             }
         }
         RemoveMember(jsonValue, jsonName);
@@ -140,7 +143,8 @@ namespace rapidjson_macros_auto {
                     return;
                 it = value.Erase(it);
             } catch(JSONException const& e) {
-                throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]" + e.what());
+                return fallback(); // configurable to throw exception?
+                // throw JSONException(GetNameString(jsonName) + "[" + std::to_string(it - value.Begin()) + "]" + e.what());
             }
         }
         RemoveMember(jsonValue, jsonName);
@@ -180,7 +184,7 @@ namespace rapidjson_macros_auto {
     void Deserialize(StringKeyedMap<T>& var, auto const& jsonName, rapidjson::Value& jsonValue) {
         auto&& [value, success] = GetMember(jsonValue, jsonName, THROW_NOT_FOUND_EXCEPTION_FALLBACK);
         if(!value.IsObject())
-            throw JSONException(GetNameString(jsonName) + TYPE_EXCEPTION_STRING(jsonValue, var));
+            throw JSONException(GetNameString(jsonName) + TYPE_EXCEPTION_STRING(value, var));
         var.clear();
         for(auto it = value.MemberBegin(); it != value.MemberEnd();) {
             auto& inst = var[it->name.GetString()] = NewType(var);
@@ -214,7 +218,8 @@ namespace rapidjson_macros_auto {
                     return;
                 it = value.RemoveMember(it);
             } catch(JSONException const& e) {
-                throw JSONException(GetNameString(jsonName) + "[" + it->name.GetString() + "]" + e.what());
+                return fallback(); // configurable to throw exception?
+                // throw JSONException(GetNameString(jsonName) + "[" + it->name.GetString() + "]" + e.what());
             }
         }
         RemoveMember(jsonValue, jsonName);
@@ -238,7 +243,8 @@ namespace rapidjson_macros_auto {
                     return;
                 it = value.RemoveMember(it);
             } catch(JSONException const& e) {
-                throw JSONException(GetNameString(jsonName) + "[" + it->name.GetString() + "]" + e.what());
+                return fallback(); // configurable to throw exception?
+                // throw JSONException(GetNameString(jsonName) + "[" + it->name.GetString() + "]" + e.what());
             }
         }
         RemoveMember(jsonValue, jsonName);

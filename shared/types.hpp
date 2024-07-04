@@ -10,6 +10,7 @@
 #include <rapidjson/prettywriter.h>
 #include <rapidjson/writer.h>
 
+#include <functional>
 #include <optional>
 #include <vector>
 #endif
@@ -28,8 +29,8 @@ class JSONException : public std::exception {
 
 template <class T>
 concept JSONStruct = requires(T t, rapidjson::Document d) {
-    t.Deserialize(d);
-    t.Serialize(d.GetAllocator()).IsObject();
+    T::Deserialize(&t, d);
+    T::Serialize(&t, d.GetAllocator()).IsObject();
 };
 
 template <class T>
@@ -129,6 +130,101 @@ namespace rapidjson_macros_types {
     template <class T>
     struct ConstructorRunner {
         ConstructorRunner() { T(); }
+    };
+
+    template <class T>
+    concept HasIalizers = requires(T t) {
+        T::serializers().size();
+        T::deserializers().size();
+    };
+
+    template <class T>
+    using SerializersT = std::vector<std::function<void(T const*, rapidjson::Value&, rapidjson::Document::AllocatorType&)>>;
+    template <class T>
+    using DeserializersT = std::vector<std::function<void(T*, rapidjson::Value&)>>;
+
+    template <class T>
+    SerializersT<T> Serializers() {
+        return {};
+    }
+    template <class T>
+    DeserializersT<T> Deserializers() {
+        return {};
+    }
+
+    template <class T, class P>
+    SerializersT<T> Serializers() {
+        if constexpr (HasIalizers<P>) {
+            SerializersT<T> ret;
+            for (auto& f : P::serializers()) {
+                ret.emplace_back([f](T const* self, auto& p1, auto& p2) { f(static_cast<P::SelfType const*>(self), p1, p2); });
+            }
+            return ret;
+        } else
+            return {};
+    }
+    template <class T, class P>
+    DeserializersT<T> Deserializers() {
+        if constexpr (HasIalizers<P>) {
+            DeserializersT<T> ret;
+            for (auto& f : P::deserializers()) {
+                ret.emplace_back([f](T* self, auto& p1) { f(static_cast<P::SelfType*>(self), p1); });
+            }
+            return ret;
+        } else
+            return {};
+    }
+
+    template <class T, class P1, class P2, class... Ps>
+    SerializersT<T> Serializers() {
+        auto ret = Serializers<T, P2, Ps...>();
+        for (auto& f : Serializers<T, P1>())
+            ret.emplace_back(f);
+        return ret;
+    }
+
+    template <class T, class P1, class P2, class... Ps>
+    DeserializersT<T> Deserializers() {
+        auto ret = Deserializers<T, P2, Ps...>();
+        for (auto& f : Deserializers<T, P1>())
+            ret.emplace_back(f);
+        return ret;
+    }
+
+    template <class T, class... Ps>
+    struct Parent : Ps... {
+        static rapidjson::Value Serialize(T const* self, rapidjson::Document::AllocatorType& allocator) {
+            rapidjson::Value jsonObject(rapidjson::kObjectType);
+            if (T::keepExtraFields && self->extraFields.has_value())
+                jsonObject.CopyFrom(self->extraFields->document, allocator);
+            for (auto& method : serializers())
+                method(self, jsonObject, allocator);
+            return jsonObject;
+        }
+        static void Deserialize(T* self, rapidjson::Value& jsonValue) {
+            for (auto& method : deserializers())
+                method(self, jsonValue);
+            if (T::keepExtraFields)
+                self->extraFields = jsonValue;
+        }
+        template <class S, class P>
+        friend SerializersT<S> Serializers();
+        template <class S, class P>
+        friend DeserializersT<S> Deserializers();
+        static inline constexpr bool keepExtraFields = false;
+        bool operator==(Parent<T, Ps...> const& rhs) const = default;
+        using SelfType = T;
+
+       protected:
+        static inline SerializersT<T>& serializers() {
+            static auto instance = Serializers<T, Ps...>();
+            return instance;
+        }
+        static inline DeserializersT<T>& deserializers() {
+            static auto instance = Deserializers<T, Ps...>();
+            return instance;
+        }
+        std::optional<rapidjson_macros_types::CopyableValue> extraFields = std::nullopt;
     };
 
     template <class T>

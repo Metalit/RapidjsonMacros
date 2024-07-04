@@ -125,9 +125,9 @@ namespace rapidjson_macros_serialization {
             if constexpr (rapidjson_macros_types::is_optional<T>) {
                 if (!variable.has_value())
                     variable.emplace();
-                variable->Deserialize(value);
+                rapidjson_macros_types::remove_optional_t<T>::Deserialize(&*variable, value);
             } else
-                variable.Deserialize(value);
+                rapidjson_macros_types::remove_optional_t<T>::Deserialize(&variable, value);
         } else if constexpr (JSONBasicType<rapidjson_macros_types::remove_optional_t<T>>) {
             if (!rapidjson_macros_types::GetIsType(value, variable)) {
                 onWrongType();
@@ -144,9 +144,9 @@ namespace rapidjson_macros_serialization {
         using real_t = std::decay_t<decltype(variable)>;  // fixes issues with const for char arrays
         if constexpr (JSONStruct<rapidjson_macros_types::remove_optional_t<real_t>>) {
             if constexpr (rapidjson_macros_types::is_optional<T>)
-                return variable->Serialize(allocator);
+                return rapidjson_macros_types::remove_optional_t<real_t>::Serialize(&*variable, allocator);
             else
-                return variable.Serialize(allocator);
+                return real_t::Serialize(&variable, allocator);
         } else if constexpr (JSONBasicType<rapidjson_macros_types::remove_optional_t<real_t>>) {
             if constexpr (rapidjson_macros_types::is_optional<T>)
                 return rapidjson_macros_types::CreateJSONValue(variable.value(), allocator);
@@ -167,7 +167,7 @@ static void ReadFromString(std::string_view string, T& toDeserialize) {
     if (document.HasParseError())
         throw JSONException("string could not be parsed as json");
 
-    toDeserialize.Deserialize(document);
+    T::Deserialize(&toDeserialize, document);
 }
 
 template <JSONStruct T>
@@ -194,7 +194,7 @@ static inline T ReadFromFile(std::string_view path) {
 template <JSONStruct T>
 static std::string WriteToString(T const& toSerialize, bool pretty = false) {
     rapidjson::Document document;
-    toSerialize.Serialize(document.GetAllocator()).Swap(document);
+    T::Serialize(&toSerialize, document.GetAllocator()).Swap(document);
 
     rapidjson::StringBuffer buffer;
     if (pretty) {

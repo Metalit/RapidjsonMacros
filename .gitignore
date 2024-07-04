@@ -55,7 +55,6 @@ Android.mk.backup
 [Ee]xtern/
 *.qmod
 mod.json
-qpm.shared.json
 qpm_defines.cmake
 extern.cmake
 

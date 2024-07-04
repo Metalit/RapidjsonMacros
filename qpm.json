@@ -4,11 +4,11 @@
   "info": {
     "name": "Rapidjson-Macros",
     "id": "rapidjson-macros",
-    "version": "1.2.0",
+    "version": "2.0.0",
     "url": "https://github.com/Metalit/RapidjsonMacros",
     "additionalData": {
       "headersOnly": true,
-      "cmake": true
+      "cmake": false
     }
   },
   "dependencies": [

@@ -10,7 +10,7 @@ struct name : rapidjson_macros_types::Parent<name __VA_OPT__(,) __VA_ARGS__>
 
 // preserves json data not specified in class fields when reserialized
 #pragma region KEEP_EXTRA_FIELDS
-#define KEEP_EXTRA_FIELDS static inline constexpr bool keepExtraFields = true;
+#define KEEP_EXTRA_FIELDS static inline constexpr bool keepExtraFields = true
 #pragma endregion
 
 // add an action to be run during deserialization (requires an identifier unique to the class)
@@ -28,7 +28,7 @@ class _DeserializeAction_##uid { \
     } \
     friend class rapidjson_macros_types::ConstructorRunner<_DeserializeAction_##uid>; \
     static inline rapidjson_macros_types::ConstructorRunner<_DeserializeAction_##uid> _##uid##_DeserializeActionInstance; \
-};
+}
 #pragma endregion
 
 // add an action to be run during serialization (requires an identifier unique to the class)
@@ -47,13 +47,12 @@ class _SerializeAction_##uid { \
     } \
     friend class rapidjson_macros_types::ConstructorRunner<_SerializeAction_##uid>; \
     static inline rapidjson_macros_types::ConstructorRunner<_SerializeAction_##uid> _##uid##_SerializeActionInstance; \
-};
+}
 #pragma endregion
 
 // define an automatically serialized / deserialized instance variable with a custom name in the json file
 #pragma region NAMED_VALUE(type, name, jsonName)
 #define NAMED_VALUE(type, name, jsonName) \
-type name = {}; \
 class _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
         serializers().emplace_back([](SelfType const* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
@@ -65,13 +64,13 @@ class _JSONValueAdder_##name { \
     } \
     friend class rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name>; \
     static inline rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name> _##name##_JSONValueAdderInstance; \
-};
+}; \
+type name
 #pragma endregion
 
 // define an automatically serialized / deserialized instance variable with a custom name in the json file and a default value
 #pragma region NAMED_VALUE_DEFAULT(type, name, default, jsonName)
 #define NAMED_VALUE_DEFAULT(type, name, def, jsonName) \
-type name = def; \
 class _JSONValueAdder_##name { \
     _JSONValueAdder_##name() { \
         serializers().emplace_back([](SelfType const* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
@@ -83,7 +82,8 @@ class _JSONValueAdder_##name { \
     } \
     friend class rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name>; \
     static inline rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name> _##name##_JSONValueAdderInstance; \
-};
+}; \
+type name = def
 #pragma endregion
 
 #define NAMED_VALUE_OPTIONAL(type, name, jsonName) NAMED_VALUE(std::optional<type>, name, jsonName)

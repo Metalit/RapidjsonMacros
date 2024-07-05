@@ -163,7 +163,7 @@ class TypeOptions {
         } else
             self->storedValue = jsonValue;
     }
-    static rapidjson::Value Serialize(TypeOptions<TDefault, Ts...>* const self, rapidjson::Document::AllocatorType& allocator) {
+    static rapidjson::Value Serialize(TypeOptions<TDefault, Ts...> const* self, rapidjson::Document::AllocatorType& allocator) {
         rapidjson::Value ret;
         ret.CopyFrom(self->storedValue.document, allocator);
         return ret;
@@ -220,7 +220,7 @@ class UnparsedJSON {
         rapidjson::Document tmp;
         tmp.CopyFrom(storedValue.document, tmp.GetAllocator());
         try {
-            T::Deserialize(ret, tmp);
+            T::Deserialize(&ret, tmp);
         } catch (JSONException const& e) {
             auto str = "UnparsedJSON<" + rapidjson_macros_types::CppTypeName(ret) + ">";
             throw JSONException(str + e.what());

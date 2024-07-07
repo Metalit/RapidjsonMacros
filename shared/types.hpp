@@ -119,11 +119,9 @@ namespace rapidjson_macros_types {
             document.CopyFrom(copyable.document, document.GetAllocator());
         }
         // comparison
-        bool operator==(CopyableValue const&) const { return true; };
+        bool operator==(CopyableValue const& rhs) const { return document == rhs.document; };
         // clear helper
-        void Clear() {
-            document.SetObject();
-        }
+        void Clear() { document.SetObject(); }
     };
 
     template <class T>
@@ -211,7 +209,11 @@ namespace rapidjson_macros_types {
         template <class S, class P>
         friend DeserializersT<S> Deserializers();
         static inline constexpr bool keepExtraFields = false;
-        bool operator==(Parent<T, Ps...> const& rhs) const = default;
+        bool operator==(Parent<T, Ps...> const& rhs) const {
+            // if only I could do a default operator== outside of the class :(
+            rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> allocator;
+            return T::Serialize((T*) this, allocator) == T::Serialize((T*) &rhs, allocator);
+        };
         using SelfType = T;
 
        protected:

@@ -200,7 +200,8 @@ class TypeOptions {
     TypeOptions(T value) {
         SetValue(value);
     }
-    TypeOptions(TypeOptions<TDefault, Ts...> const& value) = default;
+    TypeOptions(TypeOptions<TDefault, Ts...> const&) = default;
+    bool operator==(TypeOptions<TDefault, Ts...> const&) const = default;
 };
 #pragma endregion
 
@@ -241,7 +242,8 @@ class UnparsedJSON {
         Set(value);
     }
     UnparsedJSON() = default;
-    UnparsedJSON(UnparsedJSON const& value) = default;
+    UnparsedJSON(UnparsedJSON const&) = default;
+    bool operator==(UnparsedJSON const&) const = default;
 
    private:
     rapidjson_macros_types::CopyableValue storedValue;

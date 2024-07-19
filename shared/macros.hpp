@@ -82,8 +82,17 @@ class _JSONValueAdder_##name { \
     } \
     friend class rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name>; \
     static inline rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name> _##name##_JSONValueAdderInstance; \
+    template <class T> \
+    static type _def(T* self = nullptr, T* jsonValue = nullptr) { \
+        if constexpr (requires (T* self, T* jsonValue) { def; }) \
+            return def; \
+        else \
+            return {}; \
+    } \
+   public: \
+    static type GetDefault() { return _def<bool>(); } \
 }; \
-type name = def
+type name = _JSONValueAdder_##name::GetDefault()
 #pragma endregion
 
 #define NAMED_VALUE_OPTIONAL(type, name, jsonName) NAMED_VALUE(std::optional<type>, name, jsonName)

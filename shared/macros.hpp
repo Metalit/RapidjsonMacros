@@ -3,7 +3,7 @@
 #include "./auto.hpp"
 
 // declare a struct with serialization and deserialization support using the Read and Write functions
-#pragma region DECLARE_JSON_STRUCT(name, base Ts)
+#pragma region DECLARE_JSON_STRUCT(name, base Ts) { members; }
 #define DECLARE_JSON_STRUCT(name, ...) \
 struct name : rapidjson_macros_types::Parent<name __VA_OPT__(,) __VA_ARGS__>
 #pragma endregion
@@ -13,41 +13,39 @@ struct name : rapidjson_macros_types::Parent<name __VA_OPT__(,) __VA_ARGS__>
 #define KEEP_EXTRA_FIELDS static inline constexpr bool keepExtraFields = true
 #pragma endregion
 
-// add an action to be run during deserialization (requires an identifier unique to the class)
-// will most likely be run in the order of fields in your class definition
-// parameters available for the action:
-//    self: a pointer to the class instance
-//    jsonValue: the value the class is being deserialized from
-#pragma region DESERIALIZE_ACTION(id, body)
-#define DESERIALIZE_ACTION(uid, ...) \
-class _DeserializeAction_##uid { \
-    _DeserializeAction_##uid() { \
+// define a function that will be run when deserializing based on its position in the struct members
+// parameters:
+//     rapidjson::Value& jsonValue: the value the struct is currently being deserialized from
+#pragma region DESERIALIZE_FUNCTION(name) { body; }
+#define DESERIALIZE_FUNCTION(name) \
+class _DeserializeAction_##name { \
+    _DeserializeAction_##name() { \
         deserializers().emplace_back([](SelfType* self, rapidjson::Value& jsonValue) { \
-            __VA_ARGS__ \
+            self->name(jsonValue); \
         }); \
     } \
-    friend class rapidjson_macros_types::ConstructorRunner<_DeserializeAction_##uid>; \
-    static inline rapidjson_macros_types::ConstructorRunner<_DeserializeAction_##uid> _##uid##_DeserializeActionInstance; \
-}
+    friend class rapidjson_macros_types::ConstructorRunner<_DeserializeAction_##name>; \
+    static inline rapidjson_macros_types::ConstructorRunner<_DeserializeAction_##name> instance; \
+}; \
+void name(rapidjson::Value& jsonValue)
 #pragma endregion
 
-// add an action to be run during serialization (requires an identifier unique to the class)
-// will most likely be run in the order of fields in your class definition
-// parameters available for the action:
-//    self: a pointer to the class instance
-//    jsonObject: the value the class is being serialized to
-//    allocator: the allocator of the top level document being serialized to
-#pragma region SERIALIZE_ACTION(id, body)
-#define SERIALIZE_ACTION(uid, ...) \
-class _SerializeAction_##uid { \
-    _SerializeAction_##uid() { \
+// define a function that will be run when serializing based on its position in the struct members
+// parameters:
+//     rapidjson::Value& jsonObject: the value the struct is currently being serialized to
+//     rapidjson::Document::AllocatorType& allocator: the allocator to use with jsonObject
+#pragma region SERIALIZE_FUNCTION(name) { body; }
+#define SERIALIZE_FUNCTION(name) \
+class _SerializeAction_##name { \
+    _SerializeAction_##name() { \
         serializers().emplace_back([](SelfType const* self, rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) { \
-            __VA_ARGS__ \
+            self->name(jsonObject, allocator); \
         }); \
     } \
-    friend class rapidjson_macros_types::ConstructorRunner<_SerializeAction_##uid>; \
-    static inline rapidjson_macros_types::ConstructorRunner<_SerializeAction_##uid> _##uid##_SerializeActionInstance; \
-}
+    friend class rapidjson_macros_types::ConstructorRunner<_SerializeAction_##name>; \
+    static inline rapidjson_macros_types::ConstructorRunner<_SerializeAction_##name> instance; \
+}; \
+void name(rapidjson::Value& jsonObject, rapidjson::Document::AllocatorType& allocator) const
 #pragma endregion
 
 // define an automatically serialized / deserialized instance variable with a custom name in the json file

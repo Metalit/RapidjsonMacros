@@ -82,7 +82,7 @@ class _JSONValueAdder_##name { \
     static inline rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name> _##name##_JSONValueAdderInstance; \
     template <class T> \
     static type _def(T* self = nullptr, T* jsonValue = nullptr) { \
-        if constexpr (requires (T* self, T* jsonValue) { def; }) \
+        if constexpr (requires (T* self, T* jsonValue) { type(def); }) \
             return def; \
         else \
             return {}; \

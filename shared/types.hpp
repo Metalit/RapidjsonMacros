@@ -333,22 +333,23 @@ namespace rapidjson_macros_types {
     }
 
     template <class T>
-    inline T NewType(std::vector<T> const& _) {
-        return T();
-    }
+    struct EmplaceWrapper {
+        T* reference;
 
-    template <class T>
-    inline T NewType(std::optional<std::vector<T>> const& _) {
-        return T();
-    }
+        T& ref() { return *reference; }
+        EmplaceWrapper(std::vector<T> const& vector) { reference = &vector.emplace_back(); }
+        void finish() {}
+    };
 
-    template <class T>
-    inline T NewType(std::map<std::string, T> const& _) {
-        return T();
-    }
+    template <>
+    struct EmplaceWrapper<bool> {
+        bool* reference;
+        bool value = false;
+        std::vector<bool>& vec;
 
-    template <class T>
-    inline T NewType(std::optional<std::map<std::string, T>> const& _) {
-        return T();
-    }
+        bool& ref() { return *reference; }
+        EmplaceWrapper(std::vector<bool>& vector) : vec(vector) { reference = &value; }
+        // don't use destructor to avoid adding on exceptions
+        void finish() { vec.emplace_back(value); }
+    };
 }

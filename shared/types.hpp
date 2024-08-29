@@ -337,7 +337,7 @@ namespace rapidjson_macros_types {
         T* reference;
 
         T& ref() { return *reference; }
-        EmplaceWrapper(std::vector<T> const& vector) { reference = &vector.emplace_back(); }
+        EmplaceWrapper(std::vector<T>& vector) { reference = &vector.emplace_back(); }
         void finish() {}
     };
 

@@ -209,6 +209,7 @@ namespace rapidjson_macros_types {
         template <class S, class P>
         friend DeserializersT<S> Deserializers();
         static inline constexpr bool keepExtraFields = false;
+        std::optional<rapidjson_macros_types::CopyableValue> extraFields = std::nullopt;
         bool operator==(Parent<T, Ps...> const& rhs) const {
             // if only I could do a default operator== outside of the class :(
             rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> allocator;
@@ -225,7 +226,6 @@ namespace rapidjson_macros_types {
             static auto instance = Deserializers<T, Ps...>();
             return instance;
         }
-        std::optional<rapidjson_macros_types::CopyableValue> extraFields = std::nullopt;
     };
 
     template <class T>

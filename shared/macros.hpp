@@ -252,6 +252,13 @@ class UnparsedJSON {
     UnparsedJSON(UnparsedJSON const&) = default;
     bool operator==(UnparsedJSON const&) const = default;
 
+    rapidjson::Value GetValue() {
+        rapidjson::Value ret;
+        ret.CopyFrom(storedValue.document, storedValue.document.GetAllocator());
+        return ret;
+    }
+    UnparsedJSON(rapidjson::Value const& jsonValue) { storedValue = jsonValue; }
+
    private:
     rapidjson_macros_types::CopyableValue storedValue;
 };

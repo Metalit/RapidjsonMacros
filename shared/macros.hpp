@@ -257,7 +257,11 @@ class UnparsedJSON {
         ret.CopyFrom(storedValue.document, storedValue.document.GetAllocator());
         return ret;
     }
-    UnparsedJSON(rapidjson::Value const& jsonValue) { storedValue = jsonValue; }
+    static UnparsedJSON FromValue(rapidjson::Value const& jsonValue) {
+        UnparsedJSON ret;
+        ret.storedValue = jsonValue;
+        return ret;
+    }
 
    private:
     rapidjson_macros_types::CopyableValue storedValue;

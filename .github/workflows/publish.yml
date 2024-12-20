@@ -24,12 +24,12 @@ jobs:
         echo "VERSION=${GITHUB_REF#refs/tags/v}" >> ${GITHUB_OUTPUT}
 
     - name: Get QPM
-      uses: Fernthedev/qpm-action@main
+      uses: Fernthedev/qpm-action@v1
       with:
         workflow_token: ${{ secrets.GITHUB_TOKEN }}
         restore: true
         cache: true
-        publish: true
+        publish: "now"
         publish_token: "${{ secrets.QPM_KEY }}"
         version: ${{ steps.get_tag_version.outputs.VERSION }}
         tag: ${{ steps.get_tag_version.outputs.TAG }}

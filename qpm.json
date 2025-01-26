@@ -4,7 +4,7 @@
   "info": {
     "name": "Rapidjson-Macros",
     "id": "rapidjson-macros",
-    "version": "2.0.1",
+    "version": "2.0.2",
     "url": "https://github.com/Metalit/RapidjsonMacros",
     "additionalData": {
       "headersOnly": true,
@@ -14,7 +14,7 @@
   "dependencies": [
     {
       "id": "beatsaber-hook",
-      "versionRange": ">=1.0.0<7.0.0",
+      "versionRange": "^6.0.0",
       "additionalData": {}
     }
   ],

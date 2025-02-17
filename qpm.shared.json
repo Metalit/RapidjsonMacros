@@ -6,7 +6,7 @@
     "info": {
       "name": "Rapidjson-Macros",
       "id": "rapidjson-macros",
-      "version": "2.0.2",
+      "version": "2.1.0",
       "url": "https://github.com/Metalit/RapidjsonMacros",
       "additionalData": {
         "headersOnly": true,
@@ -31,12 +31,12 @@
     {
       "dependency": {
         "id": "paper2_scotland2",
-        "versionRange": "=4.4.2",
+        "versionRange": "=4.5.0",
         "additionalData": {
-          "soLink": "https://github.com/Fernthedev/paperlog/releases/download/v4.4.2/libpaper2_scotland2.so",
+          "soLink": "https://github.com/Fernthedev/paperlog/releases/download/v4.5.0/libpaper2_scotland2.so",
           "overrideSoName": "libpaper2_scotland2.so",
-          "modLink": "https://github.com/Fernthedev/paperlog/releases/download/v4.4.2/paper2_scotland2.qmod",
-          "branchName": "version/v4_4_2",
+          "modLink": "https://github.com/Fernthedev/paperlog/releases/download/v4.5.0/paper2_scotland2.qmod",
+          "branchName": "version/v4_5_0",
           "compileOptions": {
             "systemIncludes": [
               "shared/utfcpp/source"
@@ -45,7 +45,7 @@
           "cmake": false
         }
       },
-      "version": "4.4.2"
+      "version": "4.5.0"
     },
     {
       "dependency": {

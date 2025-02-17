@@ -81,14 +81,15 @@ class _JSONValueAdder_##name { \
     friend class rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name>; \
     static inline rapidjson_macros_types::ConstructorRunner<_JSONValueAdder_##name> _##name##_JSONValueAdderInstance; \
     template <class T> \
-    static type _def(T* self = nullptr, T* jsonValue = nullptr) { \
+    static type& _def(T* self = nullptr, T* jsonValue = nullptr) { \
+        static type ref; \
         if constexpr (requires (T* self, T* jsonValue) { [](type x) {} (def); }) \
-            return def; \
+            return ref = def; \
         else \
-            return {}; \
+            return ref = type{}; \
     } \
    public: \
-    static type GetDefault() { return _def<bool>(); } \
+    static type& GetDefault() { return _def<bool>(); } \
 }; \
 type name = _JSONValueAdder_##name::GetDefault()
 #pragma endregion

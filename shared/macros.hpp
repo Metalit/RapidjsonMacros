@@ -153,13 +153,14 @@ class TypeOptions {
         T var;
         return IsType<T>(jsonValue, var);
     }
-    rapidjson_macros_types::CopyableValue storedValue;
     template <typename C, typename... Cs>
     static bool CheckValueWithTypes(rapidjson::Value const& jsonValue) {
         if constexpr (sizeof...(Cs) > 0)
             return IsType<C>(jsonValue) || CheckValueWithTypes<Cs...>(jsonValue);
         return IsType<C>(jsonValue);
     }
+
+    rapidjson_macros_types::CopyableValue storedValue;
 
    public:
     static void Deserialize(TypeOptions<TDefault, Ts...>* self, rapidjson::Value& jsonValue) {
@@ -172,21 +173,23 @@ class TypeOptions {
             self->storedValue = jsonValue;
     }
     static rapidjson::Value Serialize(TypeOptions<TDefault, Ts...> const* self, rapidjson::Document::AllocatorType& allocator) {
-        rapidjson::Value ret;
-        ret.CopyFrom(self->storedValue.document, allocator);
-        return ret;
+        return self->storedValue.GetCopy(allocator);
     }
 
     template <typename T>
     requires(std::is_convertible_v<TDefault, T> || (std::is_convertible_v<Ts, T> || ...))
     bool Is() const {
-        return IsType<T>(storedValue.document);
+        if (!storedValue)
+            return false;
+        return IsType<T>(*storedValue.document);
     }
     template <typename T>
     requires(std::is_convertible_v<TDefault, T> || (std::is_convertible_v<Ts, T> || ...))
     std::optional<T> GetValue() const {
+        if (!storedValue)
+            return std::nullopt;
         T ret;
-        if (!IsType<T>(storedValue.document, ret))
+        if (!IsType<T>(*storedValue.document, ret))
             return std::nullopt;
         return ret;
     }
@@ -194,7 +197,8 @@ class TypeOptions {
     requires(std::is_convertible_v<T, TDefault> || (std::is_convertible_v<T, Ts> || ...))
     void SetValue(T&& value) {
         rapidjson_macros_types::first_convertible_t<std::remove_reference_t<T>, TDefault, Ts...> const& casted = value;
-        storedValue = rapidjson_macros_serialization::SerializeValue(casted, storedValue.document.GetAllocator());
+        storedValue.Emplace();
+        storedValue = rapidjson_macros_serialization::SerializeValue(casted, storedValue.document->GetAllocator());
     }
     template <typename T>
     requires(std::is_convertible_v<T, TDefault> || (std::is_convertible_v<T, Ts> || ...))
@@ -219,15 +223,15 @@ class UnparsedJSON {
    public:
     static void Deserialize(UnparsedJSON* self, rapidjson::Value& jsonValue) { self->storedValue = jsonValue; }
     static rapidjson::Value Serialize(UnparsedJSON const* self, rapidjson::Document::AllocatorType& allocator) {
-        rapidjson::Value ret;
-        ret.CopyFrom(self->storedValue.document, allocator);
-        return ret;
+        return self->storedValue.GetCopy(allocator);
     }
     template <JSONStruct T>
     T Parse() const {
         T ret;
+        if (!storedValue)
+            throw JSONException("UnparsedJSON<" + rapidjson_macros_types::CppTypeName(ret) + "> was null");
         rapidjson::Document tmp;
-        tmp.CopyFrom(storedValue.document, tmp.GetAllocator());
+        tmp.CopyFrom(*storedValue.document, tmp.GetAllocator());
         try {
             T::Deserialize(&ret, tmp);
         } catch (JSONException const& e) {
@@ -238,7 +242,8 @@ class UnparsedJSON {
     }
     template <JSONStruct T>
     void Set(T const& value) {
-        T::Serialize(&value, storedValue.document.GetAllocator()).Swap(storedValue.document);
+        storedValue.Emplace();
+        T::Serialize(&value, storedValue.document->GetAllocator()).Swap(*storedValue.document);
     }
     template <JSONStruct T>
     UnparsedJSON& operator=(T&& other) {
@@ -254,9 +259,9 @@ class UnparsedJSON {
     bool operator==(UnparsedJSON const&) const = default;
 
     rapidjson::Value GetValue() {
-        rapidjson::Value ret;
-        ret.CopyFrom(storedValue.document, storedValue.document.GetAllocator());
-        return ret;
+        if (!storedValue)
+            return {};
+        return storedValue.GetCopy(storedValue.document->GetAllocator());
     }
     static UnparsedJSON FromValue(rapidjson::Value const& jsonValue) {
         UnparsedJSON ret;

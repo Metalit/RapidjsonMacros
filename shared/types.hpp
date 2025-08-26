@@ -17,6 +17,7 @@
 
 #include <concepts>
 #include <map>
+#include <memory>
 
 class JSONException : public std::exception {
    private:
@@ -109,29 +110,43 @@ namespace rapidjson_macros_types {
 
     struct SelfValueType {};
 
-    class CopyableValue {
-       public:
-        rapidjson::Document document;
+    struct CopyableValue {
+        std::unique_ptr<rapidjson::Document> document;
         // constructors
         CopyableValue() = default;
-        CopyableValue(rapidjson::Value const& val) {
-            Clear();
-            document.CopyFrom(val, document.GetAllocator());
-        }
-        CopyableValue(CopyableValue const& copyable) : CopyableValue(copyable.document) {}
+        CopyableValue(rapidjson::Value const& val) { operator=(val); }
+        CopyableValue(CopyableValue const& copyable) { operator=(copyable); }
         // assignment
         void operator=(rapidjson::Value const& val) {
-            Clear();
-            document.CopyFrom(val, document.GetAllocator());
+            Emplace();
+            document->CopyFrom(val, document->GetAllocator());
         }
         void operator=(CopyableValue const& copyable) {
-            Clear();
-            document.CopyFrom(copyable.document, document.GetAllocator());
+            if (copyable) {
+                Emplace();
+                document->CopyFrom(*copyable.document, document->GetAllocator());
+            } else
+                Clear();
         }
         // comparison
-        bool operator==(CopyableValue const& rhs) const { return document == rhs.document; };
-        // clear helper
-        void Clear() { document.SetObject(); }
+        bool operator==(CopyableValue const& rhs) const {
+            return document == rhs.document || (document && rhs.document && *document == *rhs.document);
+        };
+        operator bool() const { return (bool) document; }
+        // helpers
+        rapidjson::Value GetCopy(rapidjson::Document::AllocatorType& allocator) const {
+            rapidjson::Value ret;
+            if (document)
+                ret.CopyFrom(*document, allocator);
+            return ret;
+        }
+        void Emplace() {
+            if (document)
+                document->SetNull();
+            else
+                document = std::make_unique<rapidjson::Document>();
+        }
+        void Clear() { document.reset(); }
     };
 
     template <class T>
@@ -202,8 +217,8 @@ namespace rapidjson_macros_types {
     struct Parent : Ps... {
         static rapidjson::Value Serialize(T const* self, rapidjson::Document::AllocatorType& allocator) {
             rapidjson::Value jsonObject(rapidjson::kObjectType);
-            if (T::keepExtraFields && self->extraFields.has_value())
-                jsonObject.CopyFrom(self->extraFields->document, allocator);
+            if (T::keepExtraFields && self->extraFields)
+                jsonObject.CopyFrom(*self->extraFields.document, allocator);
             for (auto& method : serializers())
                 method(self, jsonObject, allocator);
             return jsonObject;
@@ -219,7 +234,7 @@ namespace rapidjson_macros_types {
         template <class S, class P>
         friend DeserializersT<S> Deserializers();
         static inline constexpr bool keepExtraFields = false;
-        std::optional<rapidjson_macros_types::CopyableValue> extraFields = std::nullopt;
+        rapidjson_macros_types::CopyableValue extraFields;
         bool operator==(Parent<T, Ps...> const& rhs) const {
             // if only I could do a default operator== outside of the class :(
             rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> allocator;

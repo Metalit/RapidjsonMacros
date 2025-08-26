@@ -91,11 +91,21 @@ namespace rapidjson_macros_types {
     using first_convertible_t = typename first_convertible_impl<From, Ts...>::type;
 
     template <class T>
-    inline constexpr rapidjson::Type container_t = rapidjson::kObjectType;
+    struct container_impl {
+        static constexpr rapidjson::Type type = rapidjson::kObjectType;
+        static_assert(std::is_same_v<T, bool>, "Invalid member type");
+    };
     template <class T>
-    inline constexpr rapidjson::Type container_t<std::vector<T>> = rapidjson::kArrayType;
+    struct container_impl<std::vector<T>> {
+        static constexpr rapidjson::Type type = rapidjson::kArrayType;
+    };
     template <class T>
-    inline constexpr rapidjson::Type container_t<StringKeyedMap<T>> = rapidjson::kObjectType;
+    struct container_impl<StringKeyedMap<T>> {
+        static constexpr rapidjson::Type type = rapidjson::kObjectType;
+    };
+
+    template <class T>
+    constexpr rapidjson::Type container_t = container_impl<T>::type;
 
     struct SelfValueType {};
 

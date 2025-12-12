@@ -1,10 +1,15 @@
 #pragma once
 
+#include <unistd.h>
+
+#include <fstream>
 #include <span>
 #include <sstream>
 #include <tuple>
 
 #include "./types.hpp"
+#include "rapidjson/include/rapidjson/prettywriter.h"
+#include "rapidjson/include/rapidjson/writer.h"
 
 namespace rapidjson_macros_auto {
     template <class T>
@@ -161,7 +166,7 @@ namespace rapidjson_macros_serialization {
 }
 
 template <JSONStruct T>
-static void ReadFromString(std::string_view string, T& toDeserialize) {
+inline void ReadFromString(std::string_view string, T& toDeserialize) {
     rapidjson::Document document;
     document.Parse(string.data());
     if (document.HasParseError())
@@ -171,28 +176,33 @@ static void ReadFromString(std::string_view string, T& toDeserialize) {
 }
 
 template <JSONStruct T>
-static inline T ReadFromString(std::string_view string) {
+inline T ReadFromString(std::string_view string) {
     T ret;
     ReadFromString(string, ret);
     return ret;
 }
 
 template <JSONStruct T>
-static inline void ReadFromFile(std::string_view path, T& toDeserialize) {
-    if (!fileexists(path))
+inline void ReadFromFile(std::string_view path, T& toDeserialize) {
+    if (access(path.data(), W_OK | R_OK) == -1)
         throw JSONException("file not found");
-    return ReadFromString(readfile(path), toDeserialize);
+    std::ifstream file(path.data());
+    if (!file.is_open())
+        throw JSONException("failed to open file");
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return ReadFromString(buffer.str(), toDeserialize);
 }
 
 template <JSONStruct T>
-static inline T ReadFromFile(std::string_view path) {
+inline T ReadFromFile(std::string_view path) {
     T ret;
     ReadFromFile(path, ret);
     return ret;
 }
 
 template <JSONStruct T>
-static std::string WriteToString(T const& toSerialize, bool pretty = false) {
+inline std::string WriteToString(T const& toSerialize, bool pretty = false) {
     rapidjson::Document document;
     T::Serialize(&toSerialize, document.GetAllocator()).Swap(document);
 
@@ -208,6 +218,10 @@ static std::string WriteToString(T const& toSerialize, bool pretty = false) {
 }
 
 template <JSONStruct T>
-static inline bool WriteToFile(std::string_view path, T const& toSerialize, bool pretty = false) {
-    return writefile(path, WriteToString(toSerialize, pretty));
+inline bool WriteToFile(std::string_view path, T const& toSerialize, bool pretty = false) {
+    std::ofstream file(path.data());
+    if (!file.is_open())
+        return false;
+    file << WriteToString(toSerialize, pretty);
+    return true;
 }

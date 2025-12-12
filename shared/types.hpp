@@ -1,23 +1,15 @@
 #pragma once
 
-#ifndef RAPIDJSON_MACROS_GCC_TEST
-#include "beatsaber-hook/shared/config/rapidjson-utils.hpp"
-#else
-#include "fileio.hpp"
 #define RAPIDJSON_HAS_STDSTRING 1
-#include <cxxabi.h>
-#include <rapidjson/document.h>
-#include <rapidjson/prettywriter.h>
-#include <rapidjson/writer.h>
 
-#include <functional>
-#include <optional>
-#include <vector>
-#endif
+#include <cxxabi.h>
 
 #include <concepts>
+#include <functional>
 #include <map>
-#include <memory>
+#include <optional>
+
+#include "rapidjson/include/rapidjson/document.h"
 
 class JSONException : public std::exception {
    private:

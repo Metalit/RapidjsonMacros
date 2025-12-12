@@ -10,4 +10,4 @@ Documentation can be found in the comments in `macros.hpp`.
 
 ## Local Test
 
-Make sure gcc is on path and VCPKG_ROOT is set. Run `vcpkg install rapidjson` and optionally update the path in `build.ps1` if needed. Then run `build.ps1` and `test.ps1`.
+Make sure gcc is on path, then run `build.ps1` and `test.ps1`.

@@ -27,6 +27,7 @@ jobs:
       uses: Fernthedev/qpm-action@v1
       with:
         workflow_token: ${{ secrets.GITHUB_TOKEN }}
+        qpm_version: "version@1.5.7"
         restore: true
         cache: false
         publish: "now"

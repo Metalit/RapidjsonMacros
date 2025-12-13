@@ -28,7 +28,7 @@ jobs:
       with:
         workflow_token: ${{ secrets.GITHUB_TOKEN }}
         restore: true
-        cache: true
+        cache: false
         publish: "now"
         publish_token: "${{ secrets.QPM_KEY }}"
         version: ${{ steps.get_tag_version.outputs.VERSION }}

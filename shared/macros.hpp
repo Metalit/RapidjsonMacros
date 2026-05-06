@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./auto.hpp"
+#include "auto.hpp"
 
 // declare a struct with serialization and deserialization support using the Read and Write functions
 #pragma region DECLARE_JSON_STRUCT(name, base Ts) { members; }

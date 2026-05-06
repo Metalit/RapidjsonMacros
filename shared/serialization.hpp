@@ -1,15 +1,14 @@
 #pragma once
 
-#include <unistd.h>
+#include "types.hpp"
+// After other rapidjson includes
+#include "rapidjson/include/rapidjson/prettywriter.h"
 
 #include <fstream>
 #include <span>
 #include <sstream>
 #include <tuple>
-
-#include "./types.hpp"
-#include "rapidjson/include/rapidjson/prettywriter.h"
-#include "rapidjson/include/rapidjson/writer.h"
+#include <unistd.h>
 
 namespace rapidjson_macros_auto {
     template <class T>

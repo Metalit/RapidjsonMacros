@@ -1,7 +1,7 @@
 #pragma once
 
 #include <iostream>
-#include <set>
+// #include <set>
 
 #include "macros.hpp"
 
@@ -29,6 +29,7 @@ namespace RapidjsonMacros {
 
        public:
         VALUE(int, testval);
+        // Should error
         // VALUE(std::set<int>, testset);
         VALUE_DEFAULT(int, testval_def, 1);
         int def = 2;

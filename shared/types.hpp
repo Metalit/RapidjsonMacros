@@ -85,18 +85,21 @@ namespace rapidjson_macros_types {
 
     template <class T>
     struct container_impl {
-        static constexpr rapidjson::Type type = rapidjson::kObjectType;
-        static_assert(std::is_same_v<T, bool>, "Invalid member type");
+        static constexpr bool has_type = false;
     };
     template <class T>
     struct container_impl<std::vector<T>> {
+        static constexpr bool has_type = true;
         static constexpr rapidjson::Type type = rapidjson::kArrayType;
     };
     template <class T>
     struct container_impl<StringKeyedMap<T>> {
+        static constexpr bool has_type = true;
         static constexpr rapidjson::Type type = rapidjson::kObjectType;
     };
 
+    template <class T>
+    constexpr bool has_container_v = container_impl<T>::has_type;
     template <class T>
     constexpr rapidjson::Type container_t = container_impl<T>::type;
 

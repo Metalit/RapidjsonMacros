@@ -138,8 +138,11 @@ namespace rapidjson_macros_serialization {
                 return false;
             }
             variable = rapidjson_macros_types::GetValueType(value, variable);
-        } else
+        } else if constexpr (rapidjson_macros_types::has_container_v<rapidjson_macros_types::remove_optional_t<T>>) {
             rapidjson_macros_auto::ForwardToDeserialize(variable, rapidjson_macros_types::SelfValueType(), value);
+        } else {
+            static_assert(false, "Invalid type passed to DeserializeValue");
+        }
         return true;
     }
 
@@ -156,10 +159,12 @@ namespace rapidjson_macros_serialization {
                 return rapidjson_macros_types::CreateJSONValue(variable.value(), allocator);
             else
                 return rapidjson_macros_types::CreateJSONValue(variable, allocator);
-        } else {
+        } else if constexpr (rapidjson_macros_types::has_container_v<rapidjson_macros_types::remove_optional_t<real_t>>) {
             rapidjson::Value newValue(rapidjson_macros_types::container_t<rapidjson_macros_types::remove_optional_t<real_t>>);
             rapidjson_macros_auto::ForwardToSerialize(variable, rapidjson_macros_types::SelfValueType(), newValue, allocator);
             return newValue;
+        } else {
+            static_assert(false, "Invalid type passed to SerializeValue");
         }
     }
 }
